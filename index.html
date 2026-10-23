@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#0a0e12">
+  <title>UNIT 1337 — Operation Survivors</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="boot">
+    <div class="boot-title">UNIT 1337</div>
+    <div class="boot-sub">OPERATION SURVIVORS</div>
+  </div>
+
+  <div id="menu" class="screen">
+    <div class="menu-card">
+      <h1>UNIT 1337</h1>
+      <p class="tagline">Risk-of-Rain стиль · Call of Duty сеттинг · управление как Monster Survivors</p>
+      <p class="hint">Джойстик — касание / WASD · рывок — двойной тап или SPACE · авто-огонь</p>
+      <div class="ops" id="ops"></div>
+      <button class="btn primary" id="btnStart">НАЧАТЬ МИССИЮ</button>
+    </div>
+  </div>
+
+  <canvas id="c"></canvas>
+
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="panel">
+        <div class="op-name" id="hudOp">GHOST</div>
+        <div class="bar hp"><i id="hpBar"></i></div>
+        <div class="meta"><span id="hpText">100</span> HP · LV <span id="lvl">1</span></div>
+      </div>
+      <div class="panel right">
+        <div class="timer" id="timer">00:00</div>
+        <div class="meta">DIFF <span id="diff">1.0</span>x · KILLS <span id="kills">0</span></div>
+        <div class="bar xp"><i id="xpBar"></i></div>
+      </div>
+    </div>
+    <div class="hud-bottom">
+      <div class="panel loadout" id="loadout">AR-15 · AUTO</div>
+      <div class="btns">
+        <button class="btn ghost" id="btnDash">РЫВОК</button>
+        <button class="btn ghost" id="btnPause">Ⅱ</button>
+      </div>
+    </div>
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <div id="levelup" class="screen hidden">
+    <div class="menu-card">
+      <h2>ПОВЫШЕНИЕ РАНГА</h2>
+      <p class="hint">Выбери усиление</p>
+      <div id="choices" class="choices"></div>
+    </div>
+  </div>
+
+  <div id="over" class="screen hidden">
+    <div class="menu-card">
+      <h2>МИССИЯ ПРОВАЛЕНА</h2>
+      <p id="overStats" class="hint"></p>
+      <button class="btn primary" id="btnRetry">ПОВТОР</button>
+      <button class="btn" id="btnMenu">В МЕНЮ</button>
+    </div>
+  </div>
+
+  <div id="joy" class="hidden">
+    <div id="joyBase"></div>
+    <div id="joyKnob"></div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
