@@ -1,27 +1,21 @@
-# UNIT 1337 — Operation Survivors
+# UNIT 1337 — Operation Survivors (3D)
 
-Браузерный top-down survivor в духе **Risk of Rain 2**, в сеттинге **Call of Duty**, с управлением как в **Monster Survivors** (iOS).
+Браузерный **3D** survivor (Three.js) в духе **Risk of Rain 2**, сеттинг **Call of Duty**, управление как в **Monster Survivors** (iOS).
 
 ## Играть
 
-Открой `index.html` локально или через GitHub Pages.
+Открой `index.html` или GitHub Pages:
+https://holocauxxt-cell.github.io/unit1337/
 
 ## Управление
 
 | Действие | Mobile | Desktop |
 |----------|--------|--------|
-| Движение | Виртуальный джойстик (появляется в точке касания) | WASD / стрелки |
+| Движение | Виртуальный джойстик | WASD / стрелки |
 | Рывок | Двойной тап / кнопка | Space |
-| Стрельба | Авто (ближайшая цель) | Авто |
+| Стрельба | Авто | Авто |
 | Пауза | Кнопка Ⅱ | Esc |
-
-## Геймплей
-
-- Сложность растёт со **временем** (как в RoR2).
-- XP с врагов → **level up** с выбором из 3 усилений.
-- Типы врагов: grunt, rusher, heavy, elite.
-- Операторы: Ghost / Roach / Soap.
 
 ## Стек
 
-Чистый HTML / CSS / Canvas 2D. Без зависимостей.
+HTML / CSS / Three.js (CDN). Пулы объектов для стабильного FPS.
