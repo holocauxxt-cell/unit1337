@@ -1,7 +1,9 @@
-// UNIT 1337 — RoR2-like survivor, CoD setting, Monster Survivors-style controls
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
+// UNIT 1337 — 3D survivor (Three.js)
+// RoR2-like camera · CoD setting · Monster Survivors controls
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
+
 const $ = (id) => document.getElementById(id);
+const canvas = $('c');
 
 const OPS = [
   { id: 'ghost', name: 'GHOST', hp: 100, speed: 1, dmg: 1, desc: 'Сбалансированный оператор' },
@@ -22,49 +24,166 @@ const ITEM_POOL = [
   { id: 'crit', name: 'Снайперский патрон', desc: 'Крит 15% ×2.2', apply: (p) => { p.crit = Math.min(0.5, p.crit + 0.15); } },
 ];
 
-let W = 0, H = 0, DPR = 1;
-function resize() {
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
-  W = window.innerWidth;
-  H = window.innerHeight;
-  canvas.width = (W * DPR) | 0;
-  canvas.height = (H * DPR) | 0;
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+const WORLD = 48;
+const HALF = WORLD / 2;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.setClearColor(0x0a1016, 1);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0a1016, 28, 70);
+
+const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.2, 120);
+const camOffset = new THREE.Vector3(0, 22, 16);
+camera.position.copy(camOffset);
+camera.lookAt(0, 0, 0);
+
+scene.add(new THREE.AmbientLight(0x6a7a88, 0.55));
+const sun = new THREE.DirectionalLight(0xc8d8e8, 1.1);
+sun.position.set(12, 28, 8);
+scene.add(sun);
+const rim = new THREE.DirectionalLight(0x4a8a6a, 0.35);
+rim.position.set(-10, 8, -12);
+scene.add(rim);
+
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x141c22, roughness: 0.92, metalness: 0.05 });
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, WORLD), groundMat);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+const grid = new THREE.GridHelper(WORLD, 24, 0x2a3a48, 0x1a2430);
+grid.position.y = 0.02;
+scene.add(grid);
+
+const wallMat = new THREE.MeshStandardMaterial({ color: 0x1e3a30, roughness: 0.85, metalness: 0.1 });
+function addWall(w, d, x, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 1.2, d), wallMat);
+  m.position.set(x, 0.6, z);
+  scene.add(m);
 }
-window.addEventListener('resize', resize);
-resize();
+addWall(WORLD + 1, 0.6, 0, -HALF);
+addWall(WORLD + 1, 0.6, 0, HALF);
+addWall(0.6, WORLD + 1, -HALF, 0);
+addWall(0.6, WORLD + 1, HALF, 0);
+
+const geoBody = new THREE.CapsuleGeometry(0.35, 0.7, 4, 8);
+const geoHead = new THREE.SphereGeometry(0.22, 8, 8);
+const geoRifle = new THREE.BoxGeometry(0.12, 0.1, 0.7);
+const geoEnemy = new THREE.CapsuleGeometry(0.32, 0.55, 4, 8);
+const geoBullet = new THREE.SphereGeometry(0.12, 6, 6);
+const geoXp = new THREE.OctahedronGeometry(0.22, 0);
+
+const matPlayer = new THREE.MeshStandardMaterial({ color: 0x3d5c4a, roughness: 0.55, metalness: 0.25, emissive: 0x0a2018, emissiveIntensity: 0.35 });
+const matHead = new THREE.MeshStandardMaterial({ color: 0xc8b8a0, roughness: 0.7 });
+const matRifle = new THREE.MeshStandardMaterial({ color: 0x1a2228, roughness: 0.4, metalness: 0.6 });
+const matBullet = new THREE.MeshStandardMaterial({ color: 0xc8f5dd, emissive: 0x6dd6a0, emissiveIntensity: 1.2 });
+const matBulletCrit = new THREE.MeshStandardMaterial({ color: 0xffe08a, emissive: 0xffaa33, emissiveIntensity: 1.4 });
+const matXp = new THREE.MeshStandardMaterial({ color: 0x5ec8ff, emissive: 0x2a80ff, emissiveIntensity: 1.1 });
+
+const enemyMats = {
+  grunt: new THREE.MeshStandardMaterial({ color: 0x6a7a5c, roughness: 0.7 }),
+  rusher: new THREE.MeshStandardMaterial({ color: 0xc4a35a, roughness: 0.65 }),
+  heavy: new THREE.MeshStandardMaterial({ color: 0x4a5560, roughness: 0.55, metalness: 0.3 }),
+  elite: new THREE.MeshStandardMaterial({ color: 0x8b3a3a, roughness: 0.5, emissive: 0x401010, emissiveIntensity: 0.4 }),
+};
+
+const playerRoot = new THREE.Group();
+const playerBody = new THREE.Mesh(geoBody, matPlayer);
+playerBody.position.y = 0.7;
+const playerHead = new THREE.Mesh(geoHead, matHead);
+playerHead.position.y = 1.35;
+const playerRifle = new THREE.Mesh(geoRifle, matRifle);
+playerRifle.position.set(0.35, 0.85, 0.25);
+playerRoot.add(playerBody, playerHead, playerRifle);
+scene.add(playerRoot);
+
+const ringGeo = new THREE.RingGeometry(0.7, 0.85, 32);
+const ringMat = new THREE.MeshBasicMaterial({ color: 0x6dd6a0, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
+const playerRing = new THREE.Mesh(ringGeo, ringMat);
+playerRing.rotation.x = -Math.PI / 2;
+playerRing.position.y = 0.05;
+playerRoot.add(playerRing);
+
+const bulletPool = [];
+const enemyPool = [];
+const xpPool = [];
+const activeBullets = [];
+const activeEnemies = [];
+const activeXp = [];
+
+function acquireBullet(crit) {
+  let b = bulletPool.pop();
+  if (!b) {
+    b = { mesh: new THREE.Mesh(geoBullet, matBullet), vx: 0, vz: 0, life: 0, dmg: 0, crit: false };
+    scene.add(b.mesh);
+  }
+  b.mesh.material = crit ? matBulletCrit : matBullet;
+  b.mesh.visible = true;
+  b.crit = crit;
+  activeBullets.push(b);
+  return b;
+}
+function releaseBullet(b, i) {
+  b.mesh.visible = false;
+  activeBullets.splice(i, 1);
+  bulletPool.push(b);
+}
+
+function acquireEnemy(type) {
+  let e = enemyPool.pop();
+  if (!e) {
+    e = { mesh: new THREE.Mesh(geoEnemy, enemyMats.grunt), type: 'grunt', hp: 1, maxHp: 1, speed: 1, r: 0.45, dmg: 8, xp: 1, hitT: 0 };
+    scene.add(e.mesh);
+  }
+  e.mesh.material = enemyMats[type] || enemyMats.grunt;
+  e.mesh.visible = true;
+  e.type = type;
+  activeEnemies.push(e);
+  return e;
+}
+function releaseEnemy(e, i) {
+  e.mesh.visible = false;
+  activeEnemies.splice(i, 1);
+  enemyPool.push(e);
+}
+
+function acquireXp() {
+  let o = xpPool.pop();
+  if (!o) {
+    o = { mesh: new THREE.Mesh(geoXp, matXp), v: 0 };
+    scene.add(o.mesh);
+  }
+  o.mesh.visible = true;
+  o.v = 0;
+  activeXp.push(o);
+  return o;
+}
+function releaseXp(o, i) {
+  o.mesh.visible = false;
+  activeXp.splice(i, 1);
+  xpPool.push(o);
+}
 
 let selectedOp = OPS[0];
-let running = false;
-let paused = false;
-let gameOver = false;
-let time = 0;
-let kills = 0;
-let spawnAcc = 0;
-let last = performance.now();
-let msgTimer = 0;
+let running = false, paused = false, gameOver = false;
+let time = 0, kills = 0, spawnAcc = 0, last = performance.now(), msgTimer = 0, raf = 0;
 
 const player = {
-  x: 0, y: 0, vx: 0, vy: 0,
-  r: 14, hp: 100, maxHp: 100,
-  angle: 0, level: 1, xp: 0, xpNeed: 8,
-  speedMul: 1, dmgMul: 1, fireRate: 0.22, range: 170,
-  projectiles: 1, regen: 0, magnet: 70, crit: 0.05,
-  dashCd: 0, dashCdMax: 1.6, dashT: 0, dashDirX: 1, dashDirY: 0,
-  fireCd: 0, hurtT: 0,
+  x: 0, z: 0, angle: 0, r: 0.45, hp: 100, maxHp: 100,
+  level: 1, xp: 0, xpNeed: 8, speedMul: 1, dmgMul: 1, fireRate: 0.22, range: 12,
+  projectiles: 1, regen: 0, magnet: 4.5, crit: 0.05,
+  dashCd: 0, dashCdMax: 1.6, dashT: 0, dashDirX: 1, dashDirZ: 0, fireCd: 0, hurtT: 0,
 };
-const bullets = [];
-const enemies = [];
-const xpOrbs = [];
-const particles = [];
-const cam = { x: 0, y: 0 };
+
 const keys = new Set();
-const joy = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, kx: 0, ky: 0 };
-const WORLD = 2200;
+const joy = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0 };
+const camTarget = new THREE.Vector3();
 
 const opsEl = $('ops');
+opsEl.innerHTML = '';
 OPS.forEach((op, i) => {
   const d = document.createElement('div');
   d.className = 'op' + (i === 0 ? ' selected' : '');
@@ -90,24 +209,6 @@ function difficulty() {
   return 1 + time / 55 + Math.floor(time / 60) * 0.35;
 }
 
-function resetRun() {
-  Object.assign(player, {
-    x: 0, y: 0, vx: 0, vy: 0,
-    hp: selectedOp.hp, maxHp: selectedOp.hp,
-    angle: 0, level: 1, xp: 0, xpNeed: 8,
-    speedMul: selectedOp.speed, dmgMul: selectedOp.dmg,
-    fireRate: 0.22, range: 170, projectiles: 1, regen: 0,
-    magnet: 70, crit: 0.05, dashCd: 0, dashCdMax: 1.6, dashT: 0,
-    fireCd: 0, hurtT: 0,
-  });
-  bullets.length = 0; enemies.length = 0; xpOrbs.length = 0; particles.length = 0;
-  time = 0; kills = 0; spawnAcc = 0; gameOver = false; paused = false;
-  cam.x = 0; cam.y = 0;
-  $('hudOp').textContent = selectedOp.name;
-  $('loadout').textContent = 'AR-15 · AUTO · UNIT 1337';
-  updateHud();
-}
-
 function updateHud() {
   $('hpText').textContent = Math.max(0, player.hp | 0);
   $('hpBar').style.transform = `scaleX(${Math.max(0, player.hp / player.maxHp)})`;
@@ -117,6 +218,30 @@ function updateHud() {
   $('diff').textContent = difficulty().toFixed(1);
   const m = (time / 60) | 0, s = (time % 60) | 0;
   $('timer').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function clearWorld() {
+  while (activeBullets.length) releaseBullet(activeBullets[0], 0);
+  while (activeEnemies.length) releaseEnemy(activeEnemies[0], 0);
+  while (activeXp.length) releaseXp(activeXp[0], 0);
+}
+
+function resetRun() {
+  Object.assign(player, {
+    x: 0, z: 0, angle: 0, hp: selectedOp.hp, maxHp: selectedOp.hp,
+    level: 1, xp: 0, xpNeed: 8, speedMul: selectedOp.speed, dmgMul: selectedOp.dmg,
+    fireRate: 0.22, range: 12, projectiles: 1, regen: 0, magnet: 4.5, crit: 0.05,
+    dashCd: 0, dashCdMax: 1.6, dashT: 0, fireCd: 0, hurtT: 0,
+  });
+  clearWorld();
+  time = 0; kills = 0; spawnAcc = 0; gameOver = false; paused = false;
+  playerRoot.position.set(0, 0, 0);
+  playerRoot.rotation.y = 0;
+  camTarget.set(0, 0, 0);
+  camera.position.set(camOffset.x, camOffset.y, camOffset.z);
+  $('hudOp').textContent = selectedOp.name;
+  $('loadout').textContent = 'AR-15 · AUTO · 3D UNIT 1337';
+  updateHud();
 }
 
 function joyShow(x, y) {
@@ -155,7 +280,7 @@ canvas.addEventListener('pointerup', endJoy);
 canvas.addEventListener('pointercancel', endJoy);
 
 let lastTap = 0;
-canvas.addEventListener('pointerup', (e) => {
+canvas.addEventListener('pointerup', () => {
   if (!running || paused) return;
   const now = performance.now();
   if (now - lastTap < 280) tryDash();
@@ -190,17 +315,16 @@ function togglePause() {
 function tryDash() {
   if (!running || paused || gameOver) return;
   if (player.dashCd > 0 || player.dashT > 0) return;
-  let dx = joy.x, dy = joy.y;
-  if (keys.has('KeyW') || keys.has('ArrowUp')) dy -= 1;
-  if (keys.has('KeyS') || keys.has('ArrowDown')) dy += 1;
+  let dx = joy.x, dz = joy.y;
+  if (keys.has('KeyW') || keys.has('ArrowUp')) dz -= 1;
+  if (keys.has('KeyS') || keys.has('ArrowDown')) dz += 1;
   if (keys.has('KeyA') || keys.has('ArrowLeft')) dx -= 1;
   if (keys.has('KeyD') || keys.has('ArrowRight')) dx += 1;
-  const len = Math.hypot(dx, dy);
-  if (len < 0.1) { dx = Math.cos(player.angle); dy = Math.sin(player.angle); }
-  else { dx /= len; dy /= len; }
-  player.dashDirX = dx; player.dashDirY = dy;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.1) { dx = Math.sin(player.angle); dz = Math.cos(player.angle); }
+  else { dx /= len; dz /= len; }
+  player.dashDirX = dx; player.dashDirZ = dz;
   player.dashT = 0.18; player.dashCd = player.dashCdMax;
-  burst(player.x, player.y, '#6dd6a0', 8);
 }
 
 function startGame() {
@@ -210,21 +334,24 @@ function startGame() {
   $('over').classList.add('hidden');
   $('levelup').classList.add('hidden');
   $('hud').classList.remove('hidden');
-  showMsg('ВХОД В ЗОНУ', 1200);
+  showMsg('ВХОД В ЗОНУ · 3D', 1200);
   last = performance.now();
-  requestAnimationFrame(frame);
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(frame);
 }
 
-function clampWorld(o, r) {
-  const h = WORLD / 2;
-  o.x = Math.max(-h + r, Math.min(h - r, o.x));
-  o.y = Math.max(-h + r, Math.min(h - r, o.y));
+function clampPlayer() {
+  const lim = HALF - player.r - 0.4;
+  player.x = Math.max(-lim, Math.min(lim, player.x));
+  player.z = Math.max(-lim, Math.min(lim, player.z));
 }
 
 function nearestEnemy() {
   let best = null, bd = player.range * player.range;
-  for (const e of enemies) {
-    const d = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
+  for (const e of activeEnemies) {
+    const dx = e.mesh.position.x - player.x;
+    const dz = e.mesh.position.z - player.z;
+    const d = dx * dx + dz * dz;
     if (d < bd) { bd = d; best = e; }
   }
   return best;
@@ -233,63 +360,68 @@ function nearestEnemy() {
 function shoot() {
   const t = nearestEnemy();
   if (!t) return;
-  const ang = Math.atan2(t.y - player.y, t.x - player.x);
+  const dx = t.mesh.position.x - player.x;
+  const dz = t.mesh.position.z - player.z;
+  const ang = Math.atan2(dx, dz);
   player.angle = ang;
   const n = player.projectiles;
-  const spread = n > 1 ? 0.12 : 0;
+  const spread = n > 1 ? 0.14 : 0;
+  const speed = 28;
   for (let i = 0; i < n; i++) {
     const a = ang + (i - (n - 1) / 2) * spread;
     let dmg = 12 * player.dmgMul;
     let crit = false;
     if (Math.random() < player.crit) { dmg *= 2.2; crit = true; }
-    bullets.push({
-      x: player.x + Math.cos(a) * 16, y: player.y + Math.sin(a) * 16,
-      vx: Math.cos(a) * 520, vy: Math.sin(a) * 520,
-      life: player.range / 520 + 0.05, r: crit ? 4 : 3, dmg, crit,
-    });
+    const b = acquireBullet(crit);
+    const sx = Math.sin(a), sz = Math.cos(a);
+    b.mesh.position.set(player.x + sx * 0.7, 0.9, player.z + sz * 0.7);
+    b.vx = sx * speed; b.vz = sz * speed;
+    b.life = player.range / speed + 0.05;
+    b.dmg = dmg;
   }
 }
 
 function spawnEnemy() {
   const diff = difficulty();
   const ang = Math.random() * Math.PI * 2;
-  const dist = 380 + Math.random() * 160;
-  const x = player.x + Math.cos(ang) * dist;
-  const y = player.y + Math.sin(ang) * dist;
+  const dist = 16 + Math.random() * 6;
+  let x = player.x + Math.sin(ang) * dist;
+  let z = player.z + Math.cos(ang) * dist;
+  const lim = HALF - 1;
+  x = Math.max(-lim, Math.min(lim, x));
+  z = Math.max(-lim, Math.min(lim, z));
   const roll = Math.random();
   let type = 'grunt';
   if (diff > 1.8 && roll < 0.12) type = 'heavy';
   else if (roll < 0.22) type = 'rusher';
   else if (diff > 2.5 && roll < 0.28) type = 'elite';
   const base = {
-    grunt: { hp: 28, speed: 70, r: 12, dmg: 8, color: '#6a7a5c', xp: 1 },
-    rusher: { hp: 18, speed: 130, r: 10, dmg: 10, color: '#c4a35a', xp: 1 },
-    heavy: { hp: 90, speed: 45, r: 18, dmg: 16, color: '#4a5560', xp: 3 },
-    elite: { hp: 140, speed: 60, r: 16, dmg: 18, color: '#8b3a3a', xp: 5 },
+    grunt: { hp: 28, speed: 3.2, r: 0.42, dmg: 8, xp: 1 },
+    rusher: { hp: 18, speed: 5.4, r: 0.38, dmg: 10, xp: 1 },
+    heavy: { hp: 90, speed: 2.0, r: 0.55, dmg: 16, xp: 3 },
+    elite: { hp: 140, speed: 2.6, r: 0.5, dmg: 18, xp: 5 },
   }[type];
-  enemies.push({
-    type, x, y,
-    hp: base.hp * (0.85 + diff * 0.25), maxHp: base.hp * (0.85 + diff * 0.25),
-    speed: base.speed * (0.95 + diff * 0.04),
-    r: base.r, dmg: base.dmg, color: base.color, xp: base.xp, hitT: 0,
-  });
+  const e = acquireEnemy(type);
+  e.hp = base.hp * (0.85 + diff * 0.25);
+  e.maxHp = e.hp;
+  e.speed = base.speed * (0.95 + diff * 0.04);
+  e.r = base.r; e.dmg = base.dmg; e.xp = base.xp; e.hitT = 0;
+  e.mesh.position.set(x, base.r + 0.15, z);
+  e.mesh.scale.setScalar(type === 'heavy' ? 1.35 : type === 'elite' ? 1.2 : 1);
 }
 
 function killEnemy(e, idx) {
   kills++;
   const n = e.xp + (Math.random() < 0.2 ? 1 : 0);
   for (let i = 0; i < n; i++) {
-    xpOrbs.push({ x: e.x + (Math.random() - 0.5) * 16, y: e.y + (Math.random() - 0.5) * 16, v: 0 });
+    const o = acquireXp();
+    o.mesh.position.set(
+      e.mesh.position.x + (Math.random() - 0.5) * 0.6,
+      0.4,
+      e.mesh.position.z + (Math.random() - 0.5) * 0.6
+    );
   }
-  burst(e.x, e.y, e.color, 10);
-  enemies.splice(idx, 1);
-}
-
-function burst(x, y, color, n) {
-  for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2, s = 40 + Math.random() * 120;
-    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.25 + Math.random() * 0.35, color, r: 1.5 + Math.random() * 2 });
-  }
+  releaseEnemy(e, idx);
 }
 
 function levelUp() {
@@ -333,158 +465,130 @@ function update(dt) {
     player.hp = Math.min(player.maxHp, player.hp + player.regen * dt);
   }
 
-  let mx = joy.x, my = joy.y;
-  if (keys.has('KeyW') || keys.has('ArrowUp')) my -= 1;
-  if (keys.has('KeyS') || keys.has('ArrowDown')) my += 1;
+  let mx = joy.x, mz = joy.y;
+  if (keys.has('KeyW') || keys.has('ArrowUp')) mz -= 1;
+  if (keys.has('KeyS') || keys.has('ArrowDown')) mz += 1;
   if (keys.has('KeyA') || keys.has('ArrowLeft')) mx -= 1;
   if (keys.has('KeyD') || keys.has('ArrowRight')) mx += 1;
-  const ml = Math.hypot(mx, my);
-  if (ml > 1) { mx /= ml; my /= ml; }
+  const ml = Math.hypot(mx, mz);
+  if (ml > 1) { mx /= ml; mz /= ml; }
 
-  const baseSpeed = 165 * player.speedMul;
+  const baseSpeed = 7.5 * player.speedMul;
   if (player.dashT > 0) {
     player.dashT -= dt;
-    player.x += player.dashDirX * 520 * dt;
-    player.y += player.dashDirY * 520 * dt;
+    player.x += player.dashDirX * 22 * dt;
+    player.z += player.dashDirZ * 22 * dt;
   } else if (ml > 0.05) {
     player.x += mx * baseSpeed * dt;
-    player.y += my * baseSpeed * dt;
-    player.angle = Math.atan2(my, mx);
+    player.z += mz * baseSpeed * dt;
+    player.angle = Math.atan2(mx, mz);
   }
-  clampWorld(player, player.r);
+  clampPlayer();
+
+  playerRoot.position.set(player.x, 0, player.z);
+  playerRoot.rotation.y = player.angle;
+  matPlayer.emissiveIntensity = player.hurtT > 0 ? 0.9 : 0.35;
+  matPlayer.color.setHex(player.hurtT > 0 ? 0xaa5555 : 0x3d5c4a);
+  playerRing.material.opacity = 0.35 + 0.15 * Math.sin(time * 4);
 
   player.fireCd -= dt;
   if (player.fireCd <= 0) { shoot(); player.fireCd = player.fireRate; }
 
-  const rate = Math.max(0.25, 1.1 - difficulty() * 0.08);
+  const rate = Math.max(0.28, 1.15 - difficulty() * 0.08);
   spawnAcc += dt;
-  const cap = Math.min(70, 12 + difficulty() * 8);
-  while (spawnAcc >= rate && enemies.length < cap) { spawnAcc -= rate; spawnEnemy(); }
+  const cap = Math.min(55, 10 + difficulty() * 7);
+  while (spawnAcc >= rate && activeEnemies.length < cap) {
+    spawnAcc -= rate;
+    spawnEnemy();
+  }
 
-  for (let i = enemies.length - 1; i >= 0; i--) {
-    const e = enemies[i];
+  for (let i = activeEnemies.length - 1; i >= 0; i--) {
+    const e = activeEnemies[i];
     e.hitT = Math.max(0, e.hitT - dt);
-    const dx = player.x - e.x, dy = player.y - e.y;
-    const d = Math.hypot(dx, dy) || 1;
-    e.x += (dx / d) * e.speed * dt;
-    e.y += (dy / d) * e.speed * dt;
-    if (d < e.r + player.r - 2 && player.dashT <= 0) {
-      player.hp -= e.dmg * dt * 1.6;
+    const dx = player.x - e.mesh.position.x;
+    const dz = player.z - e.mesh.position.z;
+    const d = Math.hypot(dx, dz) || 1;
+    e.mesh.position.x += (dx / d) * e.speed * dt;
+    e.mesh.position.z += (dz / d) * e.speed * dt;
+    e.mesh.rotation.y = Math.atan2(dx, dz);
+    if (e.mesh.material.emissive) {
+      e.mesh.material.emissiveIntensity = e.hitT > 0 ? 0.8 : (e.type === 'elite' ? 0.4 : 0);
+    }
+    if (d < e.r + player.r && player.dashT <= 0) {
+      player.hp -= e.dmg * dt * 1.5;
       player.hurtT = 0.12;
       if (player.hp <= 0) { player.hp = 0; endGame(); return; }
     }
   }
 
-  for (let i = bullets.length - 1; i >= 0; i--) {
-    const b = bullets[i];
-    b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+  for (let i = activeBullets.length - 1; i >= 0; i--) {
+    const b = activeBullets[i];
+    b.mesh.position.x += b.vx * dt;
+    b.mesh.position.z += b.vz * dt;
+    b.life -= dt;
     let hit = false;
-    for (let j = enemies.length - 1; j >= 0; j--) {
-      const e = enemies[j];
-      if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < (e.r + b.r) ** 2) {
+    for (let j = activeEnemies.length - 1; j >= 0; j--) {
+      const e = activeEnemies[j];
+      const dx = b.mesh.position.x - e.mesh.position.x;
+      const dz = b.mesh.position.z - e.mesh.position.z;
+      if (dx * dx + dz * dz < (e.r + 0.2) * (e.r + 0.2)) {
         e.hp -= b.dmg; e.hitT = 0.1; hit = true;
         if (e.hp <= 0) killEnemy(e, j);
         break;
       }
     }
-    if (hit || b.life <= 0) bullets.splice(i, 1);
+    if (hit || b.life <= 0) releaseBullet(b, i);
   }
 
-  for (let i = xpOrbs.length - 1; i >= 0; i--) {
-    const o = xpOrbs[i];
-    const dx = player.x - o.x, dy = player.y - o.y;
-    const d = Math.hypot(dx, dy);
+  for (let i = activeXp.length - 1; i >= 0; i--) {
+    const o = activeXp[i];
+    const dx = player.x - o.mesh.position.x;
+    const dz = player.z - o.mesh.position.z;
+    const d = Math.hypot(dx, dz);
+    o.mesh.rotation.y += dt * 3;
+    o.mesh.position.y = 0.35 + Math.sin(time * 4 + i) * 0.08;
     if (d < player.magnet) {
-      o.v = Math.min(420, o.v + 500 * dt);
-      o.x += (dx / (d || 1)) * o.v * dt;
-      o.y += (dy / (d || 1)) * o.v * dt;
+      o.v = Math.min(14, o.v + 18 * dt);
+      o.mesh.position.x += (dx / (d || 1)) * o.v * dt;
+      o.mesh.position.z += (dz / (d || 1)) * o.v * dt;
     }
-    if (d < player.r + 8) {
-      player.xp += 1; xpOrbs.splice(i, 1);
+    if (d < player.r + 0.5) {
+      player.xp += 1;
+      releaseXp(o, i);
       if (player.xp >= player.xpNeed) levelUp();
     }
   }
 
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92;
-    if (p.life <= 0) particles.splice(i, 1);
-  }
-
-  cam.x += (player.x - cam.x) * Math.min(1, 6 * dt);
-  cam.y += (player.y - cam.y) * Math.min(1, 6 * dt);
+  camTarget.x += (player.x - camTarget.x) * Math.min(1, 5 * dt);
+  camTarget.z += (player.z - camTarget.z) * Math.min(1, 5 * dt);
+  camera.position.x = camTarget.x + camOffset.x;
+  camera.position.y = camOffset.y;
+  camera.position.z = camTarget.z + camOffset.z;
+  camera.lookAt(camTarget.x, 0.5, camTarget.z);
   updateHud();
 }
 
-function drawGrid() {
-  const step = 80;
-  const ox = -((cam.x % step) + step) % step;
-  const oy = -((cam.y % step) + step) % step;
-  ctx.strokeStyle = '#1a2430'; ctx.lineWidth = 1; ctx.beginPath();
-  for (let x = ox; x < W + step; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
-  for (let y = oy; y < H + step; y += step) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
-  ctx.stroke();
+function onResize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false);
 }
-
-function w2s(x, y) { return { x: x - cam.x + W / 2, y: y - cam.y + H / 2 }; }
-
-function draw() {
-  ctx.fillStyle = '#0b1016'; ctx.fillRect(0, 0, W, H);
-  drawGrid();
-  const a = w2s(-WORLD / 2, -WORLD / 2);
-  ctx.strokeStyle = '#2a4a3a'; ctx.lineWidth = 3; ctx.strokeRect(a.x, a.y, WORLD, WORLD);
-
-  for (const o of xpOrbs) {
-    const p = w2s(o.x, o.y);
-    ctx.fillStyle = '#5ec8ff'; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
-  }
-  for (const e of enemies) {
-    const p = w2s(e.x, e.y);
-    ctx.fillStyle = e.hitT > 0 ? '#fff' : e.color;
-    ctx.beginPath(); ctx.arc(p.x, p.y, e.r, 0, Math.PI * 2); ctx.fill();
-    if (e.type === 'elite' || e.type === 'heavy') {
-      ctx.strokeStyle = e.type === 'elite' ? '#ff6b6b' : '#8899aa'; ctx.lineWidth = 2; ctx.stroke();
-    }
-    if (e.hp < e.maxHp) {
-      ctx.fillStyle = '#0008'; ctx.fillRect(p.x - e.r, p.y - e.r - 7, e.r * 2, 3);
-      ctx.fillStyle = '#e25b5b'; ctx.fillRect(p.x - e.r, p.y - e.r - 7, e.r * 2 * (e.hp / e.maxHp), 3);
-    }
-  }
-  for (const b of bullets) {
-    const p = w2s(b.x, b.y);
-    ctx.fillStyle = b.crit ? '#ffe08a' : '#c8f5dd';
-    ctx.beginPath(); ctx.arc(p.x, p.y, b.r, 0, Math.PI * 2); ctx.fill();
-  }
-  for (const p of particles) {
-    const s = w2s(p.x, p.y);
-    ctx.globalAlpha = Math.max(0, p.life * 2);
-    ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(s.x, s.y, p.r, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-  const pp = w2s(player.x, player.y);
-  ctx.save(); ctx.translate(pp.x, pp.y); ctx.rotate(player.angle);
-  ctx.fillStyle = player.hurtT > 0 ? '#ffaaaa' : '#3d5c4a';
-  ctx.beginPath(); ctx.arc(0, 0, player.r, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#1e2e28'; ctx.fillRect(4, -4, 18, 8);
-  ctx.fillStyle = '#6dd6a0'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-  ctx.strokeStyle = '#6dd6a044'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(pp.x, pp.y, 22, 0, Math.PI * 2); ctx.stroke();
-}
+window.addEventListener('resize', onResize);
+onResize();
 
 function frame(now) {
-  if (!running && !gameOver) return;
   const dt = Math.min(0.033, (now - last) / 1000);
   last = now;
   if (running) update(dt);
-  draw();
-  if (running || gameOver) requestAnimationFrame(frame);
+  else if (!gameOver) {
+    camera.position.x = Math.sin(now * 0.00025) * 8;
+    camera.position.z = 18 + Math.cos(now * 0.00025) * 4;
+    camera.position.y = 16;
+    camera.lookAt(0, 0, 0);
+  }
+  renderer.render(scene, camera);
+  raf = requestAnimationFrame(frame);
 }
-
-function menuFrame() {
-  if (running) return;
-  ctx.fillStyle = '#0b1016'; ctx.fillRect(0, 0, W, H);
-  drawGrid();
-  requestAnimationFrame(menuFrame);
-}
-menuFrame();
+raf = requestAnimationFrame(frame);
