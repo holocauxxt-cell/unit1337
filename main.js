@@ -3,7 +3,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.m
 try {
   const chunks = await Promise.all(
     Array.from({length: 16}, (_, i) =>
-      fetch('./c' + i + '.js?v=p14').then(r => {
+      fetch('./c' + i + '.js?v=p15').then(r => {
         if (!r.ok) throw new Error('part ' + i + ' HTTP ' + r.status);
         return r.text();
       })
