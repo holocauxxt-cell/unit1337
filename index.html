@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#0a0e12">
   <title>UNIT 1337 — Operation Survivors</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <div id="boot">
@@ -14,12 +14,40 @@
   </div>
 
   <div id="menu" class="screen">
-    <div class="menu-card">
+    <div class="menu-card menu-wide">
+      <div class="menu-badge">TACTICAL SURVIVOR</div>
       <h1>UNIT 1337</h1>
-      <p class="tagline">3D · Risk-of-Rain стиль · Call of Duty · управление как Monster Survivors</p>
-      <p class="hint">Джойстик — касание / WASD · рывок — двойной тап или SPACE · авто-огонь</p>
-      <div class="ops" id="ops"></div>
+      <p class="tagline">3D · Risk of Rain · Call of Duty · управление как Monster Survivors</p>
+
+      <div class="menu-section">
+        <div class="section-title">ВЫБОР ОПЕРАТОРА</div>
+        <div class="ops" id="ops"></div>
+        <p class="menu-op-info" id="menuOpInfo">GHOST · сбалансированный</p>
+      </div>
+
+      <div class="menu-section menu-grid-2">
+        <div class="info-box">
+          <div class="section-title">УПРАВЛЕНИЕ</div>
+          <ul class="ctrl-list">
+            <li><b>Свайп / WASD</b> — движение</li>
+            <li><b>Двойной тап / SPACE</b> — рывок</li>
+            <li><b>Авто-огонь</b> по ближайшему</li>
+            <li><b>ESC / Ⅱ</b> — пауза</li>
+          </ul>
+        </div>
+        <div class="info-box">
+          <div class="section-title">МИССИЯ</div>
+          <ul class="ctrl-list">
+            <li>Выживай как можно дольше</li>
+            <li>Собирай XP и качай билды</li>
+            <li>Сложность растёт со временем</li>
+            <li>Зомби-волны усиливаются</li>
+          </ul>
+        </div>
+      </div>
+
       <button class="btn primary" id="btnStart">НАЧАТЬ МИССИЮ</button>
+      <p class="hint footer-hint">Рекомендуется горизонтальный режим на телефоне</p>
     </div>
   </div>
 
@@ -48,6 +76,18 @@
     <div id="msg" class="msg"></div>
   </div>
 
+  <div id="pause" class="screen hidden">
+    <div class="menu-card">
+      <div class="menu-badge">SYSTEM</div>
+      <h2>ПАУЗА</h2>
+      <p id="pauseStats" class="hint pause-stats">—</p>
+      <button class="btn primary" id="btnResume">ПРОДОЛЖИТЬ</button>
+      <button class="btn" id="btnRestart">ЗАНОВО</button>
+      <button class="btn" id="btnPauseMenu">В ГЛАВНОЕ МЕНЮ</button>
+      <p class="hint footer-hint">ESC — продолжить</p>
+    </div>
+  </div>
+
   <div id="levelup" class="screen hidden">
     <div class="menu-card">
       <h2>ПОВЫШЕНИЕ РАНГА</h2>
@@ -70,6 +110,6 @@
     <div id="joyKnob"></div>
   </div>
 
-  <script type="module" src="main.js?v=2"></script>
+  <script type="module" src="main.js?v=3"></script>
 </body>
 </html>
