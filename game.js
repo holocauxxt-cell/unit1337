@@ -1,5 +1,9 @@
-// UNIT 1337 loader — assemble full game from parts
-const urls = ['./game.part0.js', './game.part1.js'];
-const codes = await Promise.all(urls.map(u => fetch(u + '?v=anim2').then(r => r.text())));
-const blob = new Blob(codes, { type: 'text/javascript' });
+// UNIT 1337 — load base64 parts, decode, run as module
+const n = 4;
+const chunks = await Promise.all(
+  Array.from({length: n}, (_, i) => fetch('./game.b64.' + i + '?v=3').then(r => r.text()))
+);
+const bin = Uint8Array.from(atob(chunks.join('')), c => c.charCodeAt(0));
+const code = new TextDecoder().decode(bin);
+const blob = new Blob([code], { type: 'text/javascript' });
 await import(URL.createObjectURL(blob));
