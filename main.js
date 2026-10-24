@@ -2,11 +2,12 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.m
 
 try {
   const chunks = await Promise.all(
-    [0, 1, 2, 3, 4, 5, 6, 7].map(async (i) => {
-      const r = await fetch('./p' + i + '.js?v=p13');
-      if (!r.ok) throw new Error('part ' + i + ' HTTP ' + r.status);
-      return r.text();
-    })
+    Array.from({length: 16}, (_, i) =>
+      fetch('./c' + i + '.js?v=p14').then(r => {
+        if (!r.ok) throw new Error('part ' + i + ' HTTP ' + r.status);
+        return r.text();
+      })
+    )
   );
   let code = chunks.join('');
   code = code.replace(/import\s*\*\s*as\s*THREE\s*from\s*['"][^'"]+['"];?\s*/m, '');
