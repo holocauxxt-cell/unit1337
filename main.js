@@ -2,7 +2,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.m
 
 try {
   const parts = await Promise.all([0, 1, 2, 3].map(async (i) => {
-    const r = await fetch('./p' + i + '.js?v=p1');
+    const r = await fetch('./p' + i + '.js?v=p2');
     if (!r.ok) throw new Error('part ' + i + ' HTTP ' + r.status);
     return r.text();
   }));
