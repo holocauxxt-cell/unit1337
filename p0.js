@@ -3,13 +3,12 @@
 const $ = (id) => document.getElementById(id);
 const canvas = $('c');
 const OPS = [
-  { id: 'ghost', name: 'GHOST', color: 0x3d5a4c, accent: 0x7dffb3, hp: 100, speed: 5.2, dmg: 12, firerate: 0.14, desc: 'сбалансированный' },
-  { id: 'soap', name: 'SOAP', color: 0x4a5568, accent: 0x63b3ed, hp: 120, speed: 4.6, dmg: 14, firerate: 0.16, desc: 'танк · больше HP' },
-  { id: 'price', name: 'PRICE', color: 0x5c4033, accent: 0xf6ad55, hp: 90, speed: 5.8, dmg: 11, firerate: 0.11, desc: 'быстрый · высокий DPS' },
+  { id: 'ghost', name: 'GHOST', hp: 100, speed: 1, dmg: 1, desc: 'Маска · баланс', accent: 0x6dd6a0 },
+  { id: 'roach', name: 'ROACH', hp: 130, speed: 0.9, dmg: 0.95, desc: 'Тяжёлый · танк', accent: 0xd4a84b },
+  { id: 'price', name: 'PRICE', hp: 85, speed: 1.15, dmg: 1.1, desc: 'Лёгкий · DPS', accent: 0x6eb5ff },
 ];
-
 let selectedOp = OPS[0];
-const selectedSkin = { ghost: 0, soap: 0, price: 0 };
+const selectedSkin = { ghost: 0, roach: 0, price: 0 };
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0e12);
@@ -69,27 +68,15 @@ const ground = new THREE.Mesh(
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-const crateTex = makeCanvasTex((ctx, s) => {
-  ctx.fillStyle = '#6b4e2e';
-  ctx.fillRect(0, 0, s, s);
-  ctx.strokeStyle = '#3d2a14';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(2, 2, s - 4, s - 4);
-  ctx.beginPath(); ctx.moveTo(0, s / 2); ctx.lineTo(s, s / 2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(s / 2, 0); ctx.lineTo(s / 2, s); ctx.stroke();
-  ctx.fillStyle = 'rgba(0,0,0,0.15)';
-  for (let i = 0; i < 8; i++) ctx.fillRect(Math.random() * s, Math.random() * s, 3, 8);
-}, 64);
-
-const metalTex = makeCanvasTex((ctx, s) => {
-  ctx.fillStyle = '#4a5568';
-  ctx.fillRect(0, 0, s, s);
-  ctx.fillStyle = '#718096';
-  for (let i = 0; i < 20; i++) ctx.fillRect(Math.random() * s, Math.random() * s, 4, 2);
-  ctx.strokeStyle = '#2d3748';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, s - 2, s - 2);
-}, 32);
-
-const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a3340, roughness: 0.9, metalness: 0.1 });
-const crateMat
+// walls
+const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a3540, roughness: 0.9, metalness: 0.1 });
+function addWall(w, h, x, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.6), wallMat);
+  m.position.set(x, h / 2, z);
+  scene.add(m);
+}
+addWall(WORLD + 1, 1.2, 0, -HALF);
+addWall(WORLD + 1, 1.2, 0, HALF);
+addWall(0.7, WORLD + 1, -HALF, 0);
+addWall(0.7, WORLD + 1, HALF, 0);
+const crateMat 
