@@ -35,18 +35,22 @@ let selectedOp=0, running=false, paused=false, dead=false, last=0, elapsed=0, fi
 const keys={}, zombies=[], bullets=[], drops=[];
 const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0};
 function makeHumanoid(color, isZombie=false) {
- const root=new THREE.Group();
+ const root=new THREE.Group(), legs=[], arms=[];
  const torso=new THREE.Mesh(new THREE.BoxGeometry(.62,.8,.34),mat(color)); torso.position.y=1.08; root.add(torso);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),mat(isZombie?0x83947b:0xc3a78b)); head.position.y=1.67; root.add(head);
  for (const s of [-1,1]) {
-  const leg=new THREE.Mesh(new THREE.BoxGeometry(.22,.65,.24),mat(isZombie?0x465044:0x252d32)); leg.position.set(s*.18,.39,0); root.add(leg);
-  const arm=new THREE.Mesh(new THREE.BoxGeometry(.19,.62,.22),mat(color)); arm.position.set(s*.4,1.08,0); root.add(arm);
+  const leg=new THREE.Mesh(new THREE.BoxGeometry(.22,.65,.24),mat(isZombie?0x465044:0x252d32)); leg.position.set(s*.18,.39,0); root.add(leg); legs.push(leg);
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(.19,.62,.22),mat(color)); arm.position.set(s*.4,1.08,0); root.add(arm); arms.push(arm);
  }
  if (!isZombie) {
   const vest=new THREE.Mesh(new THREE.BoxGeometry(.65,.46,.37),mat(0x252e2d)); vest.position.set(0,1.12,-.01); root.add(vest);
-  const rifle=new THREE.Mesh(new THREE.BoxGeometry(.12,.13,.9),mat(0x171b1d,.45,.5)); rifle.position.set(.27,1.22,-.47); root.add(rifle);
-  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.38,8),mat(0x080b0c,.4,.6)); barrel.rotation.x=Math.PI/2; barrel.position.set(.27,1.22,-.98); root.add(barrel);
+  // Rifle points along local +Z, matching the operator's facing direction.
+  const rifle=new THREE.Mesh(new THREE.BoxGeometry(.12,.13,.9),mat(0x171b1d,.45,.5)); rifle.position.set(.27,1.22,.47); root.add(rifle);
+  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.38,8),mat(0x080b0c,.4,.6)); barrel.rotation.x=Math.PI/2; barrel.position.set(.27,1.22,.98); root.add(barrel);
+  const stock=new THREE.Mesh(new THREE.BoxGeometry(.14,.17,.28),mat(0x343a38)); stock.position.set(.27,1.22,.08); root.add(stock);
+  const sight=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.12),mat(0x080b0c,.4,.4)); sight.position.set(.27,1.32,.52); root.add(sight);
  }
+ root.userData={legs,arms,torso,head,isZombie};
  root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
  return root;
 }
@@ -146,7 +150,7 @@ function frame(now){
   if(spawnClock<=0){for(let i=0;i<Math.min(1+Math.floor(wave/3),3);i++)spawnZombie();spawnClock=Math.max(.32,1.35-elapsed*.003);}
   for(let i=zombies.length-1;i>=0;i--){
    const z=zombies[i],dx=player.x-z.x,dz=player.z-z.z,d=Math.hypot(dx,dz)||1;
-   if(d>z.r+player.r+.2){z.x+=dx/d*z.speed*dt;z.z+=dz/d*z.speed*dt;z.mesh.position.set(z.x,Math.sin(now*.006+i)*.04,z.z);z.mesh.rotation.y=Math.atan2(dx,dz);}
+   if(d>z.r+player.r+.2){z.x+=dx/d*z.speed*dt;z.z+=dz/d*z.speed*dt;z.mesh.position.set(z.x,Math.sin(now*.006+i)*.04,z.z);z.mesh.rotation.y=Math.atan2(dx,dz);const gait=Math.sin(now*.009+i)*.42;z.mesh.userData.legs.forEach((limb,k)=>limb.rotation.x=gait*(k===0?-1:1));z.mesh.userData.arms.forEach((limb,k)=>limb.rotation.x=-.25+gait*(k===0?1:-1));}
    else {z.attack-=dt;if(z.attack<=0){let dmg=Math.max(1,z.damage-armor*2);if(player.invuln<=0){player.hp-=dmg;player.invuln=.25;}z.attack=.8;if(player.hp<=0){endGame();break;}}}
   }
   for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;b.mesh.position.set(b.x,1.15,b.z);let hit=-1;for(let j=0;j<zombies.length;j++)if((zombies[j].x-b.x)**2+(zombies[j].z-b.z)**2<(zombies[j].r+.18)**2){hit=j;break;}if(hit>=0){zombies[hit].hp-=b.damage;if(zombies[hit].hp<=0)killZombie(hit);scene.remove(b.mesh);bullets.splice(i,1);}else if(b.life<=0){scene.remove(b.mesh);bullets.splice(i,1);}}
