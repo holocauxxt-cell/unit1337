@@ -80,7 +80,7 @@ const OPS = [
 ];
 let selectedOp=0, running=false, paused=false, dead=false, last=0, elapsed=0, fireClock=0, spawnClock=0, wave=1, waveKills=0, kills=0, level=1, xp=0, xpNeed=5, armor=0, weaponLevel=1, chestClock=0, messageClock=0;
 const keys={}, zombies=[], bullets=[], drops=[];
-const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0,vaultT:0,vaultDur:.55,vaultY:0,vaultX:0,vaultZ:0,vaultStartX:0,vaultStartZ:0,vaultEndX:0,vaultEndZ:0,vaultHeight:0,rollT:0,rollDur:.52,rollX:0,rollZ:0,rollSide:1,faceAngle:0,moveBlend:0};
+const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0,vaultT:0,vaultDur:.55,vaultY:0,vaultX:0,vaultZ:0,vaultStartX:0,vaultStartZ:0,vaultEndX:0,vaultEndZ:0,vaultHeight:0,vaultArc:0,rollT:0,rollDur:.52,rollX:0,rollZ:0,rollSide:1,faceAngle:0,moveBlend:0};
 function makeHumanoid(color, isZombie=false) {
  const root=new THREE.Group(), legs=[], arms=[];
  const torso=new THREE.Mesh(new THREE.BoxGeometry(.62,.8,.34),mat(color)); torso.position.y=1.08; root.add(torso);
@@ -141,7 +141,7 @@ function tryVault(mx,mz){
  const lx=player.x+alongX,lz=player.z+alongZ;
  if(blockedAt(lx,lz,player.r*.9))return false;
  player.vaultT=player.vaultDur=Math.max(.48,Math.min(.95,.44+hit.h*.18));
- player.vaultX=dx;player.vaultZ=dz;player.vaultY=Math.min(2.15,.7+hit.h*.42);
+ player.vaultX=dx;player.vaultZ=dz;player.vaultArc=Math.min(2.15,.7+hit.h*.42);player.vaultY=0;
  player.vaultStartX=player.x;player.vaultStartZ=player.z;
  player.vaultEndX=lx;player.vaultEndZ=lz;
  player.vaultHeight=hit.h;
@@ -254,9 +254,9 @@ function frame(now){
    const eased=progress*progress*(3-2*progress);
    player.x=player.vaultStartX+(player.vaultEndX-player.vaultStartX)*eased;
    player.z=player.vaultStartZ+(player.vaultEndZ-player.vaultStartZ)*eased;
-   player.vaultY=Math.sin(progress*Math.PI)*player.vaultY;
+   player.vaultY=Math.sin(progress*Math.PI)*player.vaultArc;
    player.vaultT=Math.max(0,player.vaultT-dt);
-   if(player.vaultT===0){player.vaultY=0;player.x=player.vaultEndX;player.z=player.vaultEndZ;}
+   if(player.vaultT===0){player.vaultY=0;player.vaultArc=0;player.x=player.vaultEndX;player.z=player.vaultEndZ;}
   }
   player.x=Math.max(-48,Math.min(48,player.x));player.z=Math.max(-48,Math.min(48,player.z));
   const dashY=player.dash>0?Math.sin((.22-player.dash)/.22*Math.PI)*.28:0;
