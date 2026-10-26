@@ -160,12 +160,12 @@ let touchStart=null;canvas.addEventListener('pointerdown',e=>{touchStart={x:e.cl
 function frame(now){
  requestAnimationFrame(frame);
  const dt=Math.min((now-last)/1000||0,.04);last=now;
+ let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+player.moveX;
+ let mz=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+player.moveZ;
+ let len=Math.hypot(mx,mz);if(len>1){mx/=len;mz/=len;}
  if(running&&!paused&&!dead){
   elapsed+=dt;fireClock-=dt;spawnClock-=dt;chestClock-=dt;messageClock-=dt;
   if(messageClock<=0&&$('msg'))$('msg').textContent='';
-  let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+player.moveX;
-  let mz=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+player.moveZ;
-  const len=Math.hypot(mx,mz);if(len>1){mx/=len;mz/=len;}
   player.dash=Math.max(0,player.dash-dt);player.dashCd=Math.max(0,player.dashCd-dt);player.invuln=Math.max(0,player.invuln-dt);
   const rolling=player.rollT>0;
   const speed=player.speed*(rolling?2.25:1);
