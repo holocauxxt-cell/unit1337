@@ -1,15 +1,13 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
 
 try {
-  const chunks = await Promise.all(
-    Array.from({length: 16}, (_, i) =>
-      fetch('./c' + i + '.js?v=stage5b').then(r => {
-        if (!r.ok) throw new Error('part ' + i + ' HTTP ' + r.status);
-        return r.text();
-      })
-    )
-  );
-  let code = chunks.join('');
+  const urls = Array.from({length: 16}, (_, i) => `./q${i}.txt?v=stage5c`);
+  const parts = await Promise.all(urls.map(async (u) => {
+    const r = await fetch(u);
+    if (!r.ok) throw new Error(u + ' HTTP ' + r.status);
+    return (await r.text()).replace(/\s+/g, '');
+  }));
+  let code = atob(parts.join(''));
   code = code.replace(/import\s*\*\s*as\s*THREE\s*from\s*['"][^'"]+['"];?\s*/m, '');
   const run = new Function('THREE', code);
   run(THREE);
