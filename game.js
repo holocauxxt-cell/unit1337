@@ -224,11 +224,11 @@ function frame(now){
   if(chestClock<=0){if(elapsed>15&&Math.random()<.4)dropAt(player.x+(Math.random()-.5)*12,player.z+(Math.random()-.5)*12,'chest');chestClock=24;}
   updateHud();
  }
- const leadX=player.moveBlend>.15?mx*2.4:0,leadZ=player.moveBlend>.15?mz*2.4:0;
- const target=new THREE.Vector3(player.x+leadX,0,player.z+leadZ);
- const camX=player.x+13+leadX*.65,camZ=player.z+16+leadZ*.65;
- const follow=1-Math.exp(-dt*3.6);
- camera.position.x+=(camX-camera.position.x)*follow;camera.position.y+=(19-camera.position.y)*follow;camera.position.z+=(camZ-camera.position.z)*follow;camera.lookAt(target);
+ // Stable isometric follow camera: no movement-direction lead, so the view never swings around.
+ const target=new THREE.Vector3(player.x,0,player.z);
+ const camX=player.x+13,camZ=player.z+16;
+ const follow=1-Math.exp(-dt*2.2);
+ camera.position.x+=(camX-camera.position.x)*follow;camera.position.y+=(17-camera.position.y)*follow;camera.position.z+=(camZ-camera.position.z)*follow;camera.lookAt(target);
  renderer.render(scene,camera);
 }
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));});
