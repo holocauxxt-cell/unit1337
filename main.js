@@ -1,13 +1,9 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
 
 try {
-  const urls = Array.from({length: 32}, (_, i) => `./r${i}.txt?v=stage5d`);
-  const parts = await Promise.all(urls.map(async (u) => {
-    const r = await fetch(u);
-    if (!r.ok) throw new Error(u + ' HTTP ' + r.status);
-    return (await r.text()).replace(/\s+/g, '');
-  }));
-  let code = atob(parts.join(''));
+  const r = await fetch('./game.js?v=p25');
+  if (!r.ok) throw new Error('game.js HTTP ' + r.status);
+  let code = await r.text();
   code = code.replace(/import\s*\*\s*as\s*THREE\s*from\s*['"][^'"]+['"];?\s*/m, '');
   const run = new Function('THREE', code);
   run(THREE);
