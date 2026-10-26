@@ -102,7 +102,7 @@ function makeHumanoid(color, isZombie=false) {
   const sight=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.12),mat(0x080b0c,.4,.4)); sight.position.set(0,.1,.16); rifleGroup.add(sight);
   rifleGroup.position.set(.27,1.22,.36);root.add(rifleGroup);muzzle=new THREE.Object3D();muzzle.position.set(0,0,.95);rifleGroup.add(muzzle);
  }
- root.userData={legs,arms,torso,head,pelvis,isZombie,rifle,muzzle,fireKick:0,hitFlash:0,attackT:0,phase:Math.random()*Math.PI*2};
+ root.userData={legs,arms,torso,head,pelvis,isZombie,rifle,rifleGroup,muzzle,fireKick:0,hitFlash:0,attackT:0,phase:Math.random()*Math.PI*2};
 
  root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
  return root;
@@ -288,8 +288,8 @@ function frame(now){
   player.mesh.userData.head.position.y=1.67+bob*.65;
   const ud=player.mesh.userData;
   ud.fireKick=Math.max(0,(ud.fireKick||0)-dt*1.8);
-  if(ud.rifle){ud.rifle.rotation.x=-ud.fireKick*.45;ud.rifle.position.y=1.22+ud.fireKick*.08;}
-  ud.arms.forEach((a,k)=>{if(!rolling&&!player.vaultT){const ready=moving?-.12:0;a.rotation.x=ready-(ud.fireKick||0)*(k===0?1.2:.85);a.rotation.z=k===0?-.04:.06;}});
+  if(ud.rifleGroup){ud.rifleGroup.rotation.x=-ud.fireKick*.22;ud.rifleGroup.position.z=.36-ud.fireKick*.16;}
+  ud.arms.forEach((a,k)=>{if(!rolling&&!player.vaultT){a.rotation.x=-.82-(ud.fireKick||0)*(k===0?.18:.1);a.rotation.z=k===0?-.08:.08;}});
   ud.hitFlash=Math.max(0,(ud.hitFlash||0)-dt);
   if(fireClock<=0){shoot();fireClock=Math.max(.16,.48-(weaponLevel-1)*.035);}
   if(spawnClock<=0){for(let i=0;i<Math.min(1+Math.floor(wave/3),3);i++)spawnZombie();spawnClock=Math.max(.32,1.35-elapsed*.003);}
