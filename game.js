@@ -26,6 +26,7 @@ for(let i=-4;i<=4;i++){
  const lineB=new THREE.Mesh(new THREE.BoxGeometry(.035,.012,78),floorMarkMat);
  lineB.position.set(i*8,.026,0);scene.add(lineB);
 }
+const arena = [], obstacles = [];
 const coverMat=mat(0x303a38), concrete=mat(0x59615c), rust=mat(0x66513e), hazard=mat(0xb69b54);
 function addBuilding(x,z,w,h,d,color=0x424b49){
  const group=new THREE.Group();
@@ -66,7 +67,6 @@ for(let i=0;i<6;i++){
  stripe.position.set(x,.04,z);scene.add(stripe);
 }
 
-const arena = [], obstacles = [];
 for (let i=0;i<42;i++) {
   const x=(Math.random()-.5)*64, z=(Math.random()-.5)*64;
   if (Math.hypot(x,z)<7) continue;
