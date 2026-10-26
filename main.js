@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
 
 try {
-  const r = await fetch('./game.js?v=p23');
+  const r = await fetch('./game.js?v=p24');
   if (!r.ok) throw new Error('game.js HTTP ' + r.status);
   let code = await r.text();
   code = code.replace(/import\s*\*\s*as\s*THREE\s*from\s*['"][^'"]+['"];?\s*/m, '');
