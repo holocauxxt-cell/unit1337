@@ -228,3 +228,6 @@ h2 { font-size: 18px; letter-spacing: .14em; color: var(--accent); margin-bottom
   border-radius: 50%; border: 2px solid #c8f5dd;
   background: radial-gradient(circle at 35% 30%, #e8fff2, #4a9a72 70%, #1e4030);
 }
+
+/* Fix: hide the startup overlay when game.js finishes loading. */
+#boot.hidden { display: none !important; }
