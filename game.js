@@ -146,6 +146,11 @@ function frame(now){
   player.x=Math.max(-48,Math.min(48,player.x));player.z=Math.max(-48,Math.min(48,player.z));
   player.mesh.position.set(player.x,player.dash>0?Math.sin((.22-player.dash)/.22*Math.PI)*.55:0,player.z);
   if(len>.1)player.mesh.rotation.y=Math.atan2(mx,mz);
+  const moving=len>.12, phase=elapsed*11, gait=moving?Math.sin(phase):0;
+  player.mesh.userData.legs.forEach((limb,i)=>{limb.rotation.x=gait*(i===0?-.62:.62);});
+  player.mesh.userData.arms.forEach((limb,i)=>{limb.rotation.x=moving?gait*(i===0?.18:-.18):0;});
+  player.mesh.userData.torso.position.y=1.08+(moving?Math.abs(Math.sin(phase*2))*.035:0);
+  player.mesh.userData.head.position.y=1.67+(moving?Math.abs(Math.sin(phase*2))*.025:0);
   if(fireClock<=0){shoot();fireClock=Math.max(.16,.48-(weaponLevel-1)*.035);}
   if(spawnClock<=0){for(let i=0;i<Math.min(1+Math.floor(wave/3),3);i++)spawnZombie();spawnClock=Math.max(.32,1.35-elapsed*.003);}
   for(let i=zombies.length-1;i>=0;i--){
