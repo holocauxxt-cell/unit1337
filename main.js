@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
 
 try {
-  const urls = Array.from({length: 16}, (_, i) => `./q${i}.txt?v=stage5c`);
+  const urls = Array.from({length: 32}, (_, i) => `./r${i}.txt?v=stage5d`);
   const parts = await Promise.all(urls.map(async (u) => {
     const r = await fetch(u);
     if (!r.ok) throw new Error(u + ' HTTP ' + r.status);
