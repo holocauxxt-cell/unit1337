@@ -19,12 +19,12 @@ const groundMat = mat(0x35413b);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(150,150), groundMat);
 ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
 const grid = new THREE.GridHelper(100, 50, 0x536354, 0x455247); grid.position.y=.015; scene.add(grid);
-const arena = [];
+const arena = [], obstacles = [];
 for (let i=0;i<42;i++) {
   const x=(Math.random()-.5)*64, z=(Math.random()-.5)*64;
   if (Math.hypot(x,z)<7) continue;
   const crate = new THREE.Mesh(new THREE.BoxGeometry(1.2+Math.random()*1.5,.8+Math.random()*1.1,1.2+Math.random()*1.4), mat(i%3?0x4a5149:0x6a5b43));
-  crate.position.set(x,crate.geometry.parameters.height/2,z); crate.castShadow=true; crate.receiveShadow=true; scene.add(crate); arena.push(crate);
+  crate.position.set(x,crate.geometry.parameters.height/2,z); crate.castShadow=true; crate.receiveShadow=true; scene.add(crate); arena.push(crate); obstacles.push({x,z,hw:crate.geometry.parameters.width/2,hz:crate.geometry.parameters.depth/2,h:crate.geometry.parameters.height,mesh:crate});
 }
 const OPS = [
  {id:'ghost',name:'GHOST',color:0x3d5a49,desc:'Сбалансированный боец'},
@@ -33,7 +33,7 @@ const OPS = [
 ];
 let selectedOp=0, running=false, paused=false, dead=false, last=0, elapsed=0, fireClock=0, spawnClock=0, wave=1, waveKills=0, kills=0, level=1, xp=0, xpNeed=5, armor=0, weaponLevel=1, chestClock=0, messageClock=0;
 const keys={}, zombies=[], bullets=[], drops=[];
-const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0};
+const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0,vaultT:0,vaultDur:.42,vaultY:0,vaultX:0,vaultZ:0};
 function makeHumanoid(color, isZombie=false) {
  const root=new THREE.Group(), legs=[], arms=[];
  const torso=new THREE.Mesh(new THREE.BoxGeometry(.62,.8,.34),mat(color)); torso.position.y=1.08; root.add(torso);
@@ -61,6 +61,26 @@ function setupMenu(){
  const skins=$('skinPick'); if(skins && !skins.children.length){['STANDARD','FIELD','NIGHT'].forEach((s,i)=>{const b=document.createElement('button');b.className='skin-chip';b.textContent=s;b.onclick=()=>{[...skins.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');};if(!i)b.classList.add('active');skins.appendChild(b);});}
 }
 setupMenu();
+function blockedAt(x,z,r=player.r){
+ for(const o of obstacles){
+  const cx=Math.max(o.x-o.hw,Math.min(x,o.x+o.hw));
+  const cz=Math.max(o.z-o.hz,Math.min(z,o.z+o.hz));
+  if((x-cx)*(x-cx)+(z-cz)*(z-cz)<r*r) return o;
+ }
+ return null;
+}
+function tryVault(mx,mz){
+ if(player.vaultT>0||player.dashCd>0||Math.hypot(mx,mz)<.25)return false;
+ const len=Math.hypot(mx,mz)||1, dx=mx/len,dz=mz/len;
+ const hit=blockedAt(player.x+dx*(player.r+.42),player.z+dz*(player.r+.42),player.r*.8);
+ if(!hit||hit.h>1.75)return false;
+ const landing=blockedAt(player.x+dx*(hit.hw+player.r+.7),player.z+dz*(hit.hz+player.r+.7),player.r);
+ if(landing)return false;
+ player.vaultT=player.vaultDur;
+ player.vaultX=dx;player.vaultZ=dz;player.vaultY=Math.min(1.35,.65+hit.h*.28);
+ player.invuln=Math.max(player.invuln,.25);
+ return true;
+}
 function showMsg(t){const e=$('msg');if(e)e.textContent=t;messageClock=2.6;}
 function updateHud(){
  const hp=$('hpBar'), ht=$('hpText'), lv=$('lvl'), xb=$('xpBar');
@@ -76,7 +96,7 @@ function startGame(){
  for(const a of [...zombies,...bullets,...drops])scene.remove(a.mesh||a);
  zombies.length=0;bullets.length=0;drops.length=0;
  elapsed=0;fireClock=0;spawnClock=0;wave=1;waveKills=0;kills=0;level=1;xp=0;xpNeed=5;armor=0;weaponLevel=1;
- Object.assign(player,{x:0,z:0,hp:100,maxHp:100,dash:0,dashCd:0,invuln:0});
+ Object.assign(player,{x:0,z:0,hp:100,maxHp:100,dash:0,dashCd:0,invuln:0,vaultT:0,vaultY:0});
  if(player.mesh)scene.remove(player.mesh);player.mesh=makeHumanoid(OPS[selectedOp].color);scene.add(player.mesh);
  running=true;paused=false;dead=false;last=performance.now();showMsg('МИССИЯ НАЧАЛАСЬ · ВОЛНА 1');updateHud();
 }
@@ -142,9 +162,26 @@ function frame(now){
   const len=Math.hypot(mx,mz);if(len>1){mx/=len;mz/=len;}
   player.dash=Math.max(0,player.dash-dt);player.dashCd=Math.max(0,player.dashCd-dt);player.invuln=Math.max(0,player.invuln-dt);
   const speed=player.speed*(player.dash>0?3:1);
-  player.x+=mx*speed*dt;player.z+=mz*speed*dt;
+  if(player.vaultT<=0 && len>.1){
+   const nx=player.x+mx*speed*dt,nz=player.z+mz*speed*dt;
+   const hit=blockedAt(nx,nz);
+   if(!hit){player.x=nx;player.z=nz;}
+   else {
+    const axisX=blockedAt(nx,player.z),axisZ=blockedAt(player.x,nz);
+    if(!axisX)player.x=nx;
+    if(!axisZ)player.z=nz;
+    if(axisX||axisZ)tryVault(mx,mz);
+   }
+  }
+  if(player.vaultT>0){
+   const progress=1-player.vaultT/player.vaultDur;
+   player.x+=player.vaultX*speed*dt*1.15;player.z+=player.vaultZ*speed*dt*1.15;
+   player.vaultT=Math.max(0,player.vaultT-dt);
+   player.vaultY=Math.sin(progress*Math.PI)*.95;
+  }
   player.x=Math.max(-48,Math.min(48,player.x));player.z=Math.max(-48,Math.min(48,player.z));
-  player.mesh.position.set(player.x,player.dash>0?Math.sin((.22-player.dash)/.22*Math.PI)*.55:0,player.z);
+  const dashY=player.dash>0?Math.sin((.22-player.dash)/.22*Math.PI)*.28:0;
+  player.mesh.position.set(player.x,Math.max(dashY,player.vaultY),player.z);
   if(len>.1)player.mesh.rotation.y=Math.atan2(mx,mz);
   const moving=len>.12, phase=elapsed*11, gait=moving?Math.sin(phase):0;
   player.mesh.userData.legs.forEach((limb,i)=>{limb.rotation.x=gait*(i===0?-.62:.62);});
