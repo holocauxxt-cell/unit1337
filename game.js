@@ -264,17 +264,16 @@ function frame(now){
   const rollP=rolling?1-player.rollT/player.rollDur:0;
   player.mesh.rotation.z=rolling?Math.sin(rollP*Math.PI)*.24*player.rollSide:0;
   player.mesh.rotation.x=rolling?Math.sin(rollP*Math.PI*2)*.35:0;
-  player.mesh.userData.torso.rotation.x=rolling?Math.sin(rollP*Math.PI)*.7:0;
-  player.mesh.userData.head.rotation.x=rolling?-.22*Math.sin(rollP*Math.PI):0;
-  player.mesh.userData.legs.forEach((limb,i)=>{if(rolling)limb.rotation.x=(i===0?1:-1)*(.55+Math.sin(rollP*Math.PI*2)*.45);});
-  player.mesh.userData.arms.forEach((limb,i)=>{if(rolling)limb.rotation.x=-1.05+(i===0?.15:-.15);});
   if(len>.1&&!rolling&&!player.vaultT){const desired=Math.atan2(mx,mz);let diff=((desired-player.faceAngle+Math.PI*3)%(Math.PI*2))-Math.PI;player.faceAngle+=diff*Math.min(1,dt*13);player.mesh.rotation.y=player.faceAngle;}
-  player.moveBlend+=(Math.min(1,len)*(!rolling&&!player.vaultT?1:0)-player.moveBlend)*Math.min(1,dt*9);
-  const moving=player.moveBlend>.12&&!rolling, phase=elapsed*(8+player.moveBlend*5), gait=moving?Math.sin(phase)*player.moveBlend:0;
-  player.mesh.userData.legs.forEach((limb,i)=>{limb.rotation.x=gait*(i===0?-.62:.62);});
-  player.mesh.userData.arms.forEach((limb,i)=>{limb.rotation.x=moving?gait*(i===0?.18:-.18):0;});
-  player.mesh.userData.torso.position.y=1.08+(moving?Math.abs(Math.sin(phase*2))*.035:0);
-  player.mesh.userData.head.position.y=1.67+(moving?Math.abs(Math.sin(phase*2))*.025:0);
+  player.moveBlend+=(Math.min(1,len)*(!rolling&&!player.vaultT?1:0)-player.moveBlend)*Math.min(1,dt*7);
+  const moving=player.moveBlend>.08&&!rolling, phase=elapsed*(7+player.moveBlend*5), gait=moving?Math.sin(phase)*player.moveBlend:0;
+  const bob=moving?Math.abs(Math.sin(phase*2))*.045:Math.sin(elapsed*2.1)*.018;
+  player.mesh.userData.legs.forEach((limb,i)=>{limb.rotation.x=rolling?(i===0?1:-1)*(.65+Math.sin(rollP*Math.PI*2)*.35):gait*(i===0?-.72:.72);});
+  player.mesh.userData.arms.forEach((limb,i)=>{limb.rotation.x=rolling?-1.05+(i===0?.15:-.15):(moving?gait*(i===0?.22:-.22):-.12);});
+  player.mesh.userData.torso.rotation.x=rolling?Math.sin(rollP*Math.PI)*.7:(player.vaultT>0?-.28:0);
+  player.mesh.userData.head.rotation.x=rolling?-.22*Math.sin(rollP*Math.PI):(player.vaultT>0?.12:0);
+  player.mesh.userData.torso.position.y=1.08+bob;
+  player.mesh.userData.head.position.y=1.67+bob*.65;
   if(fireClock<=0){shoot();fireClock=Math.max(.16,.48-(weaponLevel-1)*.035);}
   if(spawnClock<=0){for(let i=0;i<Math.min(1+Math.floor(wave/3),3);i++)spawnZombie();spawnClock=Math.max(.32,1.35-elapsed*.003);}
   for(let i=zombies.length-1;i>=0;i--){
