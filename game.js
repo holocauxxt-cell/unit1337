@@ -33,7 +33,7 @@ const OPS = [
 ];
 let selectedOp=0, running=false, paused=false, dead=false, last=0, elapsed=0, fireClock=0, spawnClock=0, wave=1, waveKills=0, kills=0, level=1, xp=0, xpNeed=5, armor=0, weaponLevel=1, chestClock=0, messageClock=0;
 const keys={}, zombies=[], bullets=[], drops=[];
-const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0,vaultT:0,vaultDur:.42,vaultY:0,vaultX:0,vaultZ:0,rollT:0,rollDur:.46,rollX:0,rollZ:0,rollSide:1};
+const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0,vaultT:0,vaultDur:.55,vaultY:0,vaultX:0,vaultZ:0,rollT:0,rollDur:.52,rollX:0,rollZ:0,rollSide:1,faceAngle:0,moveBlend:0};
 function makeHumanoid(color, isZombie=false) {
  const root=new THREE.Group(), legs=[], arms=[];
  const torso=new THREE.Mesh(new THREE.BoxGeometry(.62,.8,.34),mat(color)); torso.position.y=1.08; root.add(torso);
@@ -78,9 +78,9 @@ function startRoll(mx,mz){
 function tryVault(mx,mz){
  if(player.vaultT>0||player.dashCd>0||Math.hypot(mx,mz)<.25)return false;
  const len=Math.hypot(mx,mz)||1, dx=mx/len,dz=mz/len;
- const hit=blockedAt(player.x+dx*(player.r+.42),player.z+dz*(player.r+.42),player.r*.8);
- if(!hit||hit.h>1.75)return false;
- const landing=blockedAt(player.x+dx*(hit.hw+player.r+.7),player.z+dz*(hit.hz+player.r+.7),player.r);
+ const hit=blockedAt(player.x+dx*.55,player.z+dz*.55,player.r*.8);
+ if(!hit||hit.h>1.75||player.moveBlend<.45)return false;
+ const landing=blockedAt(player.x+dx*(hit.hw+player.r+.55),player.z+dz*(hit.hz+player.r+.55),player.r);
  if(landing)return false;
  player.vaultT=player.vaultDur;
  player.vaultX=dx;player.vaultZ=dz;player.vaultY=Math.min(1.35,.65+hit.h*.28);
@@ -192,15 +192,22 @@ function frame(now){
    if(!blockedAt(player.x+stepX,player.z))player.x+=stepX;
    if(!blockedAt(player.x,player.z+stepZ))player.z+=stepZ;
    player.vaultT=Math.max(0,player.vaultT-dt);
-   player.vaultY=Math.sin(progress*Math.PI)*.95;
+   player.vaultY=Math.sin(progress*Math.PI)*Math.min(1.25,.62+((blockedAt(player.x+player.vaultX*.25,player.z+player.vaultZ*.25)||{}).h||.5)*.25);
    if(player.vaultT===0)player.vaultY=0;
   }
   player.x=Math.max(-48,Math.min(48,player.x));player.z=Math.max(-48,Math.min(48,player.z));
   const dashY=player.dash>0?Math.sin((.22-player.dash)/.22*Math.PI)*.28:0;
   player.mesh.position.set(player.x,Math.max(dashY,player.vaultY),player.z);
-  player.mesh.rotation.z=rolling?Math.sin((1-player.rollT/player.rollDur)*Math.PI)*.48*player.rollSide:0;
-  if(len>.1)player.mesh.rotation.y=Math.atan2(mx,mz);
-  const moving=len>.12&&!rolling, phase=elapsed*11, gait=moving?Math.sin(phase):0;
+  const rollP=rolling?1-player.rollT/player.rollDur:0;
+  player.mesh.rotation.z=rolling?Math.sin(rollP*Math.PI)*.24*player.rollSide:0;
+  player.mesh.rotation.x=rolling?Math.sin(rollP*Math.PI*2)*.35:0;
+  player.mesh.userData.torso.rotation.x=rolling?Math.sin(rollP*Math.PI)*.7:0;
+  player.mesh.userData.head.rotation.x=rolling?-.22*Math.sin(rollP*Math.PI):0;
+  player.mesh.userData.legs.forEach((limb,i)=>{if(rolling)limb.rotation.x=(i===0?1:-1)*(.55+Math.sin(rollP*Math.PI*2)*.45);});
+  player.mesh.userData.arms.forEach((limb,i)=>{if(rolling)limb.rotation.x=-1.05+(i===0?.15:-.15);});
+  if(len>.1&&!rolling&&!player.vaultT){const desired=Math.atan2(mx,mz);let diff=((desired-player.faceAngle+Math.PI*3)%(Math.PI*2))-Math.PI;player.faceAngle+=diff*Math.min(1,dt*13);player.mesh.rotation.y=player.faceAngle;}
+  player.moveBlend+=(Math.min(1,len)*(!rolling&&!player.vaultT?1:0)-player.moveBlend)*Math.min(1,dt*9);
+  const moving=player.moveBlend>.12&&!rolling, phase=elapsed*(8+player.moveBlend*5), gait=moving?Math.sin(phase)*player.moveBlend:0;
   player.mesh.userData.legs.forEach((limb,i)=>{limb.rotation.x=gait*(i===0?-.62:.62);});
   player.mesh.userData.arms.forEach((limb,i)=>{limb.rotation.x=moving?gait*(i===0?.18:-.18):0;});
   player.mesh.userData.torso.position.y=1.08+(moving?Math.abs(Math.sin(phase*2))*.035:0);
@@ -217,8 +224,11 @@ function frame(now){
   if(chestClock<=0){if(elapsed>15&&Math.random()<.4)dropAt(player.x+(Math.random()-.5)*12,player.z+(Math.random()-.5)*12,'chest');chestClock=24;}
   updateHud();
  }
- const target=new THREE.Vector3(player.x,0,player.z);
- camera.position.x+=(player.x+13-camera.position.x)*.045;camera.position.y+=(19-camera.position.y)*.045;camera.position.z+=(player.z+16-camera.position.z)*.045;camera.lookAt(target);
+ const leadX=player.moveBlend>.15?mx*2.4:0,leadZ=player.moveBlend>.15?mz*2.4:0;
+ const target=new THREE.Vector3(player.x+leadX,0,player.z+leadZ);
+ const camX=player.x+13+leadX*.65,camZ=player.z+16+leadZ*.65;
+ const follow=1-Math.exp(-dt*3.6);
+ camera.position.x+=(camX-camera.position.x)*follow;camera.position.y+=(19-camera.position.y)*follow;camera.position.z+=(camZ-camera.position.z)*follow;camera.lookAt(target);
  renderer.render(scene,camera);
 }
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));});
