@@ -26,7 +26,7 @@ for(let i=-4;i<=4;i++){
  const lineB=new THREE.Mesh(new THREE.BoxGeometry(.035,.012,78),floorMarkMat);
  lineB.position.set(i*8,.026,0);scene.add(lineB);
 }
-const arena = [], obstacles = [];
+const arena = [], obstacles = [], corpses = [];
 const coverMat=mat(0x303a38), concrete=mat(0x59615c), rust=mat(0x66513e), hazard=mat(0xb69b54);
 function addBuilding(x,z,w,h,d,color=0x424b49){
  const group=new THREE.Group();
@@ -189,7 +189,7 @@ function dropAt(x,z,type){
 function killZombie(i){
  const z=zombies[i];
  z.dead=true;z.deathT=.52;z.mesh.userData.deathDir=(Math.random()<.5?-1:1);z.mesh.userData.legs.forEach(l=>{l.rotation.x=-.7;});z.mesh.userData.arms.forEach((a,k)=>{a.rotation.x=k===0?-1.1:-.8;});z.mesh.userData.torso.rotation.x=.28;
- zombies.splice(i,1);scene.add(z.mesh);z.mesh.userData.remains=true;kills++;waveKills++;
+ zombies.splice(i,1);scene.add(z.mesh);z.mesh.userData.remains=true;corpses.push({mesh:z.mesh,life:.62,dir:z.mesh.userData.deathDir});kills++;waveKills++;
  if(Math.random()<.16)dropAt(z.x,z.z,Math.random()<.5?'heal':'armor');else dropAt(z.x,z.z,'xp');
  if(z.tough){dropAt(z.x,z.z,'chest');showMsg('ЭЛИТА УСТРАНЕНА · ДОБЫЧА');}
  if(waveKills>=wave*8){wave++;waveKills=0;dropAt(player.x+2,player.z-2,'chest');showMsg('ВОЛНА '+wave+' · ПОДКРЕПЛЕНИЕ');}
@@ -310,18 +310,26 @@ function frame(now){
   for(let i=bullets.length-1;i>=0;i--){
    const b=bullets[i];b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;b.mesh.position.set(b.x,1.2,b.z);
    if(b.tracer){b.tracer.position.set(b.x-b.vx*.014,1.2,b.z-b.vz*.014);b.tracer.material.opacity=Math.min(.9,b.life*1.8);b.tracer.scale.set(.58,.055,1);}
-   if(b.flash){b.flash.position.set(b.x,b.flash.position.y,b.z);b.flash.material.opacity=Math.max(0,b.life*4);b.flash.scale.setScalar(.32*Math.max(.01,b.life));}
+   if(b.flash){b.flash.position.set(b.x,b.flash.position.y,b.z);b.flash.material.opacity=Math.max(0,1-(b.age||0)/.075);b.flash.scale.setScalar(.32*Math.max(.01,1-(b.age||0)/.075));}
+   b.age=(b.age||0)+dt;
+   if(b.flash&&b.age>.075){scene.remove(b.flash);b.flash.material.dispose();b.flash=null;}
    let hit=-1;for(let j=0;j<zombies.length;j++)if((zombies[j].x-b.x)**2+(zombies[j].z-b.z)**2<(zombies[j].r+.18)**2){hit=j;break;}
    if(hit>=0){
     const target=zombies[hit],zu=target.mesh.userData;target.hp-=b.damage;zu.hitFlash=.12;zu.torso.rotation.x=-.22;zu.head.rotation.x=.16;zu.arms.forEach((a,k)=>{a.rotation.x=k===0?-.95:-.6;});
     target.x-=b.vx*.003;target.z-=b.vz*.003;
     if(target.hp<=0)killZombie(hit);
-    scene.remove(b.mesh);scene.remove(b.tracer);scene.remove(b.flash);b.mesh.material.dispose();b.tracer.material.dispose();b.flash.material.dispose();bullets.splice(i,1);
-   }else if(b.life<=0){scene.remove(b.mesh);scene.remove(b.tracer);scene.remove(b.flash);b.mesh.material.dispose();b.tracer.material.dispose();b.flash.material.dispose();bullets.splice(i,1);}
+    scene.remove(b.mesh);scene.remove(b.tracer);if(b.flash){scene.remove(b.flash);b.flash.material.dispose();}b.mesh.material.dispose();b.tracer.material.dispose();bullets.splice(i,1);
+   }else if(b.life<=0){scene.remove(b.mesh);scene.remove(b.tracer);if(b.flash){scene.remove(b.flash);b.flash.material.dispose();}b.mesh.material.dispose();b.tracer.material.dispose();bullets.splice(i,1);}
   }
-  for(let i=scene.children.length-1;i>=0;i--){
-   const obj=scene.children[i],ud=obj.userData;
-   if(ud&&ud.remains){ud.deathT=(ud.deathT||.52)-dt;obj.rotation.z+=((ud.deathDir||1)*1.1-obj.rotation.z)*Math.min(1,dt*5);obj.position.y=Math.max(-.35,obj.position.y-dt*.65);if(ud.deathT<=0){scene.remove(obj);obj.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(o.material&&o.material.dispose)o.material.dispose();}});}}
+  for(let i=corpses.length-1;i>=0;i--){
+   const corpse=corpses[i];corpse.life-=dt;
+   const mesh=corpse.mesh;mesh.rotation.z+=(corpse.dir*1.25-mesh.rotation.z)*Math.min(1,dt*6);
+   mesh.rotation.x+=(.18-mesh.rotation.x)*Math.min(1,dt*4);
+   mesh.position.y=Math.max(-.28,mesh.position.y-dt*.48);
+   if(corpse.life<=0){
+    scene.remove(mesh);mesh.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else if(o.material)o.material.dispose();}});
+    corpses.splice(i,1);
+   }
   }
   for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.mesh.position.y=(d.type==='chest'?.35:.45)+Math.sin(now*.004+d.bob)*.12;if((d.x-player.x)**2+(d.z-player.z)**2<1.7){if(d.type==='xp'){xp++;if(xp>=xpNeed)levelUp();}else if(d.type==='heal')player.hp=Math.min(player.maxHp,player.hp+25);else if(d.type==='armor')armor++;else if(d.type==='chest'){const r=Math.random();if(r<.34){player.hp=Math.min(player.maxHp,player.hp+45);showMsg('СУНДУК · АПТЕЧКА');}else if(r<.67){weaponLevel++;showMsg('СУНДУК · УЛУЧШЕНИЕ ОРУЖИЯ');}else{armor++;showMsg('СУНДУК · БРОНЯ +1');}}scene.remove(d.mesh);drops.splice(i,1);updateHud();}}
   if(chestClock<=0){if(elapsed>15&&Math.random()<.4)dropAt(player.x+(Math.random()-.5)*12,player.z+(Math.random()-.5)*12,'chest');chestClock=24;}
