@@ -93,9 +93,9 @@ function makeHumanoid(color, isZombie=false) {
   const arm=new THREE.Mesh(new THREE.BoxGeometry(.19,.62,.22),mat(color));arm.position.y=-.27;armPivot.add(arm);
   const hand=new THREE.Mesh(new THREE.SphereGeometry(.085,8,6),mat(isZombie?0x83947b:0xc3a78b));hand.position.set(0,-.55,.03);armPivot.add(hand);arms.push(armPivot);
  }
- let rifle=null, muzzle=null;
+ let rifle=null, rifleGroup=null, muzzle=null;
  if (!isZombie) {
-  const rifleGroup=new THREE.Group();
+  rifleGroup=new THREE.Group();
   rifle=new THREE.Mesh(new THREE.BoxGeometry(.12,.13,.9),mat(0x171b1d,.45,.5)); rifle.position.set(0,0,.12); rifleGroup.add(rifle);
   const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.38,8),mat(0x080b0c,.4,.6)); barrel.rotation.x=Math.PI/2; barrel.position.set(0,0,.72); rifleGroup.add(barrel);
   const stock=new THREE.Mesh(new THREE.BoxGeometry(.14,.17,.28),mat(0x343a38)); stock.position.set(0,0,-.28); rifleGroup.add(stock);
@@ -166,7 +166,7 @@ function updateHud(){
 }
 function startGame(){
  $('menu')?.classList.add('hidden');$('pause')?.classList.add('hidden');$('over')?.classList.add('hidden');$('levelup')?.classList.add('hidden');$('hud')?.classList.remove('hidden');$('boot')?.classList.add('hidden');
- for(const a of [...zombies,...bullets,...drops])scene.remove(a.mesh||a);
+ for(const a of [...zombies,...bullets,...drops]){scene.remove(a.mesh||a);if(a.tracer)scene.remove(a.tracer);if(a.flash)scene.remove(a.flash);}for(const corpse of corpses)scene.remove(corpse.mesh);corpses.length=0;
  zombies.length=0;bullets.length=0;drops.length=0;
  elapsed=0;fireClock=0;spawnClock=0;wave=1;waveKills=0;kills=0;level=1;xp=0;xpNeed=5;armor=0;weaponLevel=1;
  Object.assign(player,{x:0,z:0,hp:100,maxHp:100,dash:0,dashCd:0,invuln:0,vaultT:0,vaultY:0,rollT:0,rollX:0,rollZ:0});
@@ -310,7 +310,7 @@ function frame(now){
   for(let i=bullets.length-1;i>=0;i--){
    const b=bullets[i];b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;b.mesh.position.set(b.x,1.2,b.z);
    if(b.tracer){b.tracer.position.set(b.x-b.vx*.014,1.2,b.z-b.vz*.014);b.tracer.material.opacity=Math.min(.9,b.life*1.8);b.tracer.scale.set(.58,.055,1);}
-   if(b.flash){b.flash.position.set(b.x,b.flash.position.y,b.z);b.flash.material.opacity=Math.max(0,1-(b.age||0)/.075);b.flash.scale.setScalar(.32*Math.max(.01,1-(b.age||0)/.075));}
+   if(b.flash){b.flash.material.opacity=Math.max(0,1-(b.age||0)/.075);b.flash.scale.setScalar(.32*Math.max(.01,1-(b.age||0)/.075));}
    b.age=(b.age||0)+dt;
    if(b.flash&&b.age>.075){scene.remove(b.flash);b.flash.material.dispose();b.flash=null;}
    let hit=-1;for(let j=0;j<zombies.length;j++)if((zombies[j].x-b.x)**2+(zombies[j].z-b.z)**2<(zombies[j].r+.18)**2){hit=j;break;}
