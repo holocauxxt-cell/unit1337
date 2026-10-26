@@ -1,9 +1,14 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
+import * as THREE from from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
 
 try {
-  const r = await fetch('https://raw.githubusercontent.com/holocauxxt-cell/unit1337/5b1e261e7813cda43c776d3f2b5baac321d0f3a3/game.js');
-  if (!r.ok) throw new Error('game.js HTTP ' + r.status);
-  let code = await r.text();
+  const parts = [];
+  for (let i = 0; i < 20; i++) {
+    const name = 's' + String(i).padStart(2, '0') + '.js';
+    const r = await fetch('./' + name + '?v=s5p');
+    if (!r.ok) throw new Error(name + ' HTTP ' + r.status);
+    parts.push(await r.text());
+  }
+  let code = parts.join('');
   code = code.replace(/import\s*\*\s*as\s*THREE\s*from\s*['"][^'"]+['"];?\s*/m, '');
   const run = new Function('THREE', code);
   run(THREE);
