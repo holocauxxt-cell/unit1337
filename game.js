@@ -33,7 +33,7 @@ const OPS = [
 ];
 let selectedOp=0, running=false, paused=false, dead=false, last=0, elapsed=0, fireClock=0, spawnClock=0, wave=1, waveKills=0, kills=0, level=1, xp=0, xpNeed=5, armor=0, weaponLevel=1, chestClock=0, messageClock=0;
 const keys={}, zombies=[], bullets=[], drops=[];
-const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0,vaultT:0,vaultDur:.42,vaultY:0,vaultX:0,vaultZ:0};
+const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0,vaultT:0,vaultDur:.42,vaultY:0,vaultX:0,vaultZ:0,rollT:0,rollDur:.46,rollX:0,rollZ:0,rollSide:1};
 function makeHumanoid(color, isZombie=false) {
  const root=new THREE.Group(), legs=[], arms=[];
  const torso=new THREE.Mesh(new THREE.BoxGeometry(.62,.8,.34),mat(color)); torso.position.y=1.08; root.add(torso);
@@ -69,6 +69,12 @@ function blockedAt(x,z,r=player.r){
  }
  return null;
 }
+function startRoll(mx,mz){
+ if(player.dashCd>0||player.vaultT>0||player.rollT>0)return false;
+ let dx=mx,dz=mz,len=Math.hypot(dx,dz);
+ if(len<.15){dx=Math.sin(player.mesh.rotation.y);dz=Math.cos(player.mesh.rotation.y);len=1;}
+ player.rollX=dx/len;player.rollZ=dz/len;player.rollT=player.rollDur;player.dashCd=1.05;player.invuln=.38;player.rollSide=Math.random()<.5?-1:1;return true;
+}
 function tryVault(mx,mz){
  if(player.vaultT>0||player.dashCd>0||Math.hypot(mx,mz)<.25)return false;
  const len=Math.hypot(mx,mz)||1, dx=mx/len,dz=mz/len;
@@ -96,7 +102,7 @@ function startGame(){
  for(const a of [...zombies,...bullets,...drops])scene.remove(a.mesh||a);
  zombies.length=0;bullets.length=0;drops.length=0;
  elapsed=0;fireClock=0;spawnClock=0;wave=1;waveKills=0;kills=0;level=1;xp=0;xpNeed=5;armor=0;weaponLevel=1;
- Object.assign(player,{x:0,z:0,hp:100,maxHp:100,dash:0,dashCd:0,invuln:0,vaultT:0,vaultY:0});
+ Object.assign(player,{x:0,z:0,hp:100,maxHp:100,dash:0,dashCd:0,invuln:0,vaultT:0,vaultY:0,rollT:0,rollX:0,rollZ:0});
  if(player.mesh)scene.remove(player.mesh);player.mesh=makeHumanoid(OPS[selectedOp].color);scene.add(player.mesh);
  running=true;paused=false;dead=false;last=performance.now();showMsg('МИССИЯ НАЧАЛАСЬ · ВОЛНА 1');updateHud();
 }
@@ -147,8 +153,8 @@ $('btnStart')?.addEventListener('click',startGame);$('btnRetry')?.addEventListen
 $('btnMenu')?.addEventListener('click',()=>{dead=false;$('over')?.classList.add('hidden');$('hud')?.classList.add('hidden');$('menu')?.classList.remove('hidden');running=false;});
 $('btnPauseMenu')?.addEventListener('click',()=>{paused=false;running=false;$('pause')?.classList.add('hidden');$('hud')?.classList.add('hidden');$('menu')?.classList.remove('hidden');});
 $('btnResume')?.addEventListener('click',pauseGame);$('btnPause')?.addEventListener('click',pauseGame);
-$('btnDash')?.addEventListener('click',()=>{if(player.dashCd<=0){player.dash=.22;player.dashCd=1.2;player.invuln=.35;}});
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key==='Escape'&&(!dead))pauseGame();if(e.code==='Space'&&player.dashCd<=0){player.dash=.22;player.dashCd=1.2;player.invuln=.35;}});
+$('btnDash')?.addEventListener('click',()=>startRoll(player.moveX,player.moveZ));
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key==='Escape'&&(!dead))pauseGame();if(e.code==='Space')startRoll((keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0));});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 let touchStart=null;canvas.addEventListener('pointerdown',e=>{touchStart={x:e.clientX,y:e.clientY,id:e.pointerId};});canvas.addEventListener('pointermove',e=>{if(touchStart&&touchStart.id===e.pointerId&&e.pointerType!=='mouse'){const dx=e.clientX-touchStart.x,dy=e.clientY-touchStart.y;player.moveX=Math.max(-1,Math.min(1,dx/45));player.moveZ=Math.max(-1,Math.min(1,dy/45));}});canvas.addEventListener('pointerup',e=>{if(touchStart&&touchStart.id===e.pointerId){touchStart=null;player.moveX=0;player.moveZ=0;}});canvas.addEventListener('pointercancel',()=>{touchStart=null;player.moveX=0;player.moveZ=0;});
 function frame(now){
@@ -161,8 +167,15 @@ function frame(now){
   let mz=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+player.moveZ;
   const len=Math.hypot(mx,mz);if(len>1){mx/=len;mz/=len;}
   player.dash=Math.max(0,player.dash-dt);player.dashCd=Math.max(0,player.dashCd-dt);player.invuln=Math.max(0,player.invuln-dt);
-  const speed=player.speed*(player.dash>0?3:1);
-  if(player.vaultT<=0 && len>.1){
+  const rolling=player.rollT>0;
+  const speed=player.speed*(rolling?2.25:1);
+  if(rolling){
+   const stepX=player.rollX*speed*dt,stepZ=player.rollZ*speed*dt;
+   const nx=player.x+stepX,nz=player.z+stepZ;
+   if(!blockedAt(nx,player.z))player.x=nx;
+   if(!blockedAt(player.x,nz))player.z=nz;
+   player.rollT=Math.max(0,player.rollT-dt);
+  } else if(player.vaultT<=0 && len>.1){
    const nx=player.x+mx*speed*dt,nz=player.z+mz*speed*dt;
    const hit=blockedAt(nx,nz);
    if(!hit){player.x=nx;player.z=nz;}
@@ -170,20 +183,24 @@ function frame(now){
     const axisX=blockedAt(nx,player.z),axisZ=blockedAt(player.x,nz);
     if(!axisX)player.x=nx;
     if(!axisZ)player.z=nz;
-    if(axisX||axisZ)tryVault(mx,mz);
+    if((axisX||axisZ)&&player.dashCd<=0)tryVault(mx,mz);
    }
   }
   if(player.vaultT>0){
    const progress=1-player.vaultT/player.vaultDur;
-   player.x+=player.vaultX*speed*dt*1.15;player.z+=player.vaultZ*speed*dt*1.15;
+   const stepX=player.vaultX*speed*dt*1.15,stepZ=player.vaultZ*speed*dt*1.15;
+   if(!blockedAt(player.x+stepX,player.z))player.x+=stepX;
+   if(!blockedAt(player.x,player.z+stepZ))player.z+=stepZ;
    player.vaultT=Math.max(0,player.vaultT-dt);
    player.vaultY=Math.sin(progress*Math.PI)*.95;
+   if(player.vaultT===0)player.vaultY=0;
   }
   player.x=Math.max(-48,Math.min(48,player.x));player.z=Math.max(-48,Math.min(48,player.z));
   const dashY=player.dash>0?Math.sin((.22-player.dash)/.22*Math.PI)*.28:0;
   player.mesh.position.set(player.x,Math.max(dashY,player.vaultY),player.z);
+  player.mesh.rotation.z=rolling?Math.sin((1-player.rollT/player.rollDur)*Math.PI)*.48*player.rollSide:0;
   if(len>.1)player.mesh.rotation.y=Math.atan2(mx,mz);
-  const moving=len>.12, phase=elapsed*11, gait=moving?Math.sin(phase):0;
+  const moving=len>.12&&!rolling, phase=elapsed*11, gait=moving?Math.sin(phase):0;
   player.mesh.userData.legs.forEach((limb,i)=>{limb.rotation.x=gait*(i===0?-.62:.62);});
   player.mesh.userData.arms.forEach((limb,i)=>{limb.rotation.x=moving?gait*(i===0?.18:-.18):0;});
   player.mesh.userData.torso.position.y=1.08+(moving?Math.abs(Math.sin(phase*2))*.035:0);
