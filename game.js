@@ -96,7 +96,7 @@ function makeHumanoid(color, isZombie=false) {
  let rifle=null, muzzle=null;
  if (!isZombie) {
   const rifleGroup=new THREE.Group();
-  const rifle=new THREE.Mesh(new THREE.BoxGeometry(.12,.13,.9),mat(0x171b1d,.45,.5)); rifle.position.set(0,0,.12); rifleGroup.add(rifle);
+  rifle=new THREE.Mesh(new THREE.BoxGeometry(.12,.13,.9),mat(0x171b1d,.45,.5)); rifle.position.set(0,0,.12); rifleGroup.add(rifle);
   const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.38,8),mat(0x080b0c,.4,.6)); barrel.rotation.x=Math.PI/2; barrel.position.set(0,0,.72); rifleGroup.add(barrel);
   const stock=new THREE.Mesh(new THREE.BoxGeometry(.14,.17,.28),mat(0x343a38)); stock.position.set(0,0,-.28); rifleGroup.add(stock);
   const sight=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.12),mat(0x080b0c,.4,.4)); sight.position.set(0,.1,.16); rifleGroup.add(sight);
