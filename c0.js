@@ -48,3 +48,20 @@ scene.add(ground);
 
 const floorMarkMat = new THREE.MeshStandardMaterial({ color: 0x6a776b, roughness: 1, transparent: true, opacity: 0.17 });
 for (let i = -4; i <= 4; i++) {
+  for (let j = -4; j <= 4; j++) {
+    if (Math.abs(i) < 2 && Math.abs(j) < 2) continue;
+    const m = new THREE.Mesh(new THREE.CircleGeometry(1.8 + Math.random() * 1.4, 8), floorMarkMat);
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(i * 12 + (Math.random() - 0.5) * 4, 0.02, j * 12 + (Math.random() - 0.5) * 4);
+    scene.add(m);
+  }
+}
+
+function makeBuilding(x, z, w, h, d, color) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, 0.9, 0.05));
+  body.position.y = h / 2; body.castShadow = true; body.receiveShadow = true; g.add(body);
+  addEdge(body, 0x0a0c10, 1.02);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 0.15, d + 0.2), mat(0x2a3230, 0.95));
+  roof.position.y = h + 0.08; g.add(roof);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(Math.min(1.1, w * 0.35), Math.min(2.1, h * 0.65), 0.08), mat(0x1a1e1c, 0.7));
