@@ -286,14 +286,43 @@ function frame(now){
   player.mesh.userData.head.rotation.x=rolling?-.22*Math.sin(rollP*Math.PI):(player.vaultT>0?.12:0);
   player.mesh.userData.torso.position.y=1.08+bob;
   player.mesh.userData.head.position.y=1.67+bob*.65;
+  const ud=player.mesh.userData;
+  ud.fireKick=Math.max(0,(ud.fireKick||0)-dt*1.8);
+  if(ud.rifle){ud.rifle.rotation.x=-ud.fireKick*.45;ud.rifle.position.y=1.22+ud.fireKick*.08;}
+  ud.arms.forEach((a,k)=>{if(!rolling&&!player.vaultT){const ready=moving?-.12:0;a.rotation.x=ready-(ud.fireKick||0)*(k===0?1.2:.85);a.rotation.z=k===0?-.04:.06;}});
+  ud.hitFlash=Math.max(0,(ud.hitFlash||0)-dt);
   if(fireClock<=0){shoot();fireClock=Math.max(.16,.48-(weaponLevel-1)*.035);}
   if(spawnClock<=0){for(let i=0;i<Math.min(1+Math.floor(wave/3),3);i++)spawnZombie();spawnClock=Math.max(.32,1.35-elapsed*.003);}
   for(let i=zombies.length-1;i>=0;i--){
    const z=zombies[i],dx=player.x-z.x,dz=player.z-z.z,d=Math.hypot(dx,dz)||1;
-   if(d>z.r+player.r+.2){z.x+=dx/d*z.speed*dt;z.z+=dz/d*z.speed*dt;z.mesh.position.set(z.x,Math.sin(now*.006+i)*.04,z.z);z.mesh.rotation.y=Math.atan2(dx,dz);const gait=Math.sin(now*.009+i)*.42;z.mesh.userData.legs.forEach((limb,k)=>limb.rotation.x=gait*(k===0?-1:1));z.mesh.userData.arms.forEach((limb,k)=>limb.rotation.x=-.25+gait*(k===0?1:-1));}
-   else {z.attack-=dt;if(z.attack<=0){let dmg=Math.max(1,z.damage-armor*2);if(player.invuln<=0){player.hp-=dmg;player.invuln=.25;}z.attack=.8;if(player.hp<=0){endGame();break;}}}
+   const zu=z.mesh.userData;
+   if(d>z.r+player.r+.2){
+    z.x+=dx/d*z.speed*dt;z.z+=dz/d*z.speed*dt;z.mesh.position.set(z.x,Math.sin(now*.003+zu.phase)*.025,z.z);z.mesh.rotation.y=Math.atan2(dx,dz);
+    const gait=Math.sin(now*.0065+zu.phase)*.34, lunge=zu.attackT>0?Math.sin((1-zu.attackT/.42)*Math.PI)*.5:0;
+    zu.legs.forEach((limb,k)=>{limb.rotation.x=gait*(k===0?-1:1);limb.rotation.z=0;});
+    zu.arms.forEach((limb,k)=>{limb.rotation.x=-.48+gait*(k===0?1:-1)-lunge;limb.rotation.z=(k===0?-.12:.12);});
+    zu.torso.rotation.x=-.08+Math.abs(gait)*.08;
+   } else {
+    z.attack-=dt;zu.attackT=Math.max(0,(zu.attackT||0)-dt);
+    if(z.attack<=0){let dmg=Math.max(1,z.damage-armor*2);zu.attackT=.42;zu.torso.rotation.x=-.24;zu.arms.forEach((a,k)=>{a.rotation.x=k===0?-1.05:-.85;});if(player.invuln<=0){player.hp-=dmg;player.invuln=.25;}z.attack=.8;if(player.hp<=0){endGame();break;}}
+   }
   }
-  for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;b.mesh.position.set(b.x,1.2,b.z);if(b.tracer){b.tracer.position.set(b.x-b.vx*.012,1.2,b.z-b.vz*.012);b.tracer.material.opacity=Math.min(.8,b.life*1.2);b.tracer.scale.set(.48,.045,1);}let hit=-1;for(let j=0;j<zombies.length;j++)if((zombies[j].x-b.x)**2+(zombies[j].z-b.z)**2<(zombies[j].r+.18)**2){hit=j;break;}if(hit>=0){zombies[hit].hp-=b.damage;zombies[hit].mesh.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive){o.material.emissive.setHex(0x441111);}});if(zombies[hit].hp<=0)killZombie(hit);scene.remove(b.mesh);if(b.tracer){scene.remove(b.tracer);b.tracer.geometry.dispose();b.tracer.material.dispose();}bullets.splice(i,1);}else if(b.life<=0){scene.remove(b.mesh);if(b.tracer){scene.remove(b.tracer);b.tracer.geometry.dispose();b.tracer.material.dispose();}bullets.splice(i,1);}}
+  for(let i=bullets.length-1;i>=0;i--){
+   const b=bullets[i];b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;b.mesh.position.set(b.x,1.2,b.z);
+   if(b.tracer){b.tracer.position.set(b.x-b.vx*.014,1.2,b.z-b.vz*.014);b.tracer.material.opacity=Math.min(.9,b.life*1.8);b.tracer.scale.set(.58,.055,1);}
+   if(b.flash){b.flash.position.set(b.x,b.flash.position.y,b.z);b.flash.material.opacity=Math.max(0,b.life*4);b.flash.scale.setScalar(.32*Math.max(.01,b.life));}
+   let hit=-1;for(let j=0;j<zombies.length;j++)if((zombies[j].x-b.x)**2+(zombies[j].z-b.z)**2<(zombies[j].r+.18)**2){hit=j;break;}
+   if(hit>=0){
+    const target=zombies[hit],zu=target.mesh.userData;target.hp-=b.damage;zu.hitFlash=.12;zu.torso.rotation.x=-.22;zu.head.rotation.x=.16;zu.arms.forEach((a,k)=>{a.rotation.x=k===0?-.95:-.6;});
+    target.x-=b.vx*.003;target.z-=b.vz*.003;
+    if(target.hp<=0)killZombie(hit);
+    scene.remove(b.mesh);scene.remove(b.tracer);scene.remove(b.flash);b.mesh.material.dispose();b.tracer.material.dispose();b.flash.material.dispose();bullets.splice(i,1);
+   }else if(b.life<=0){scene.remove(b.mesh);scene.remove(b.tracer);scene.remove(b.flash);b.mesh.material.dispose();b.tracer.material.dispose();b.flash.material.dispose();bullets.splice(i,1);}
+  }
+  for(let i=scene.children.length-1;i>=0;i--){
+   const obj=scene.children[i],ud=obj.userData;
+   if(ud&&ud.remains){ud.deathT=(ud.deathT||.52)-dt;obj.rotation.z+=((ud.deathDir||1)*1.1-obj.rotation.z)*Math.min(1,dt*5);obj.position.y=Math.max(-.35,obj.position.y-dt*.65);if(ud.deathT<=0){scene.remove(obj);obj.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(o.material&&o.material.dispose)o.material.dispose();}});}}
+  }
   for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.mesh.position.y=(d.type==='chest'?.35:.45)+Math.sin(now*.004+d.bob)*.12;if((d.x-player.x)**2+(d.z-player.z)**2<1.7){if(d.type==='xp'){xp++;if(xp>=xpNeed)levelUp();}else if(d.type==='heal')player.hp=Math.min(player.maxHp,player.hp+25);else if(d.type==='armor')armor++;else if(d.type==='chest'){const r=Math.random();if(r<.34){player.hp=Math.min(player.maxHp,player.hp+45);showMsg('СУНДУК · АПТЕЧКА');}else if(r<.67){weaponLevel++;showMsg('СУНДУК · УЛУЧШЕНИЕ ОРУЖИЯ');}else{armor++;showMsg('СУНДУК · БРОНЯ +1');}}scene.remove(d.mesh);drops.splice(i,1);updateHud();}}
   if(chestClock<=0){if(elapsed>15&&Math.random()<.4)dropAt(player.x+(Math.random()-.5)*12,player.z+(Math.random()-.5)*12,'chest');chestClock=24;}
   updateHud();
