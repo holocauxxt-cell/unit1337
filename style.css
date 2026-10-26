@@ -231,3 +231,11 @@ h2 { font-size: 18px; letter-spacing: .14em; color: var(--accent); margin-bottom
 
 /* Fix: hide the startup overlay when game.js finishes loading. */
 #boot.hidden { display: none !important; }
+
+/* Tactical polish pass */
+.menu-card { backdrop-filter: blur(14px); background: linear-gradient(145deg,#17232deF,#0d141bee); border-color:#344b5b; }
+.btn, .op-card, .skin-chip, .choice { transition: transform .14s ease, border-color .14s ease, background .14s ease, box-shadow .14s ease; }
+.btn:hover, .choice:hover { border-color:var(--accent); box-shadow:0 0 18px #6dd6a022; }
+.panel { backdrop-filter: blur(8px); border-color:#334553; }
+.hud-top .panel { min-width:148px; }
+#msg { padding:9px 14px; border:1px solid #6dd6a055; border-radius:8px; background:#0b151bd9; letter-spacing:.12em; }
