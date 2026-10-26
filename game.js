@@ -3,16 +3,19 @@
 const $ = (id) => document.getElementById(id);
 const canvas = $('c');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x101820);
-scene.fog = new THREE.Fog(0x101820, 28, 72);
-const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 180);
+scene.background = new THREE.Color(0x1a2430);
+scene.fog = new THREE.Fog(0x1a2430, 40, 95);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 180);
+camera.position.set(12, 13, 15);
+camera.lookAt(0, 0.9, 0);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.7));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-scene.add(new THREE.HemisphereLight(0xb6d5ed, 0x263021, 2.0));
-const sun = new THREE.DirectionalLight(0xffedcf, 2.4);
+scene.add(new THREE.AmbientLight(0x6a7a88, 0.85));
+scene.add(new THREE.HemisphereLight(0xc8ddf0, 0x3a4a38, 1.6));
+const sun = new THREE.DirectionalLight(0xfff0d0, 2.8);
 sun.position.set(-12, 22, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
@@ -21,7 +24,7 @@ scene.add(sun);
 const mat = (color, roughness = 0.82, metalness = 0.02) =>
   new THREE.MeshStandardMaterial({ color, roughness, metalness });
 
-const groundMat = mat(0x35413b);
+const groundMat = mat(0x4a5a50);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), groundMat);
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
@@ -156,8 +159,8 @@ function makeLimb(w, h, d, color, rough = 0.85, metal = 0.02) {
 function makeOperator(color) {
   const root = new THREE.Group();
   const skin = 0xc3a78b;
-  const pants = 0x252d32;
-  const boot = 0x1a1e22;
+  const pants = 0x3a454c;
+  const boot = 0x2a3036;
   const vest = color;
 
   const pelvis = new THREE.Group();
@@ -451,6 +454,7 @@ function animateOperator(mesh, dt, time, opts) {
   }
 
   if (ud.rightGrip && ud.leftGrip && arms.length === 2) {
+    mesh.updateMatrixWorld(true);
     const tmpR = new THREE.Vector3(), tmpL = new THREE.Vector3();
     const shR = new THREE.Vector3(), shL = new THREE.Vector3();
     ud.rightGrip.getWorldPosition(tmpR);
@@ -646,6 +650,9 @@ function startGame() {
   if (player.mesh) scene.remove(player.mesh);
   player.mesh = makeOperator(OPS[selectedOp].color);
   scene.add(player.mesh);
+  player.mesh.position.set(0, 0, 0);
+  camera.position.set(12, 13, 15);
+  camera.lookAt(0, 0.9, 0);
   running = true; paused = false; dead = false; last = performance.now();
   showMsg('МИССИЯ НАЧАЛАСЬ · ВОЛНА 1');
   updateHud();
@@ -973,11 +980,11 @@ function frame(now) {
   }
 
   if (player.mesh) {
-    const camX = player.x + 13, camZ = player.z + 16;
-    camera.position.x += (camX - camera.position.x) * Math.min(1, dt * 6);
-    camera.position.z += (camZ - camera.position.z) * Math.min(1, dt * 6);
-    camera.position.y = 14;
-    camera.lookAt(player.x, 0.8, player.z);
+    const camX = player.x + 10, camZ = player.z + 12;
+    camera.position.x += (camX - camera.position.x) * Math.min(1, dt * 8);
+    camera.position.z += (camZ - camera.position.z) * Math.min(1, dt * 8);
+    camera.position.y += (11.5 - camera.position.y) * Math.min(1, dt * 8);
+    camera.lookAt(player.x, 1.0, player.z);
   }
   renderer.render(scene, camera);
 }
