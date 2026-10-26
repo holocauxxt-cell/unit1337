@@ -19,6 +19,21 @@ const groundMat = mat(0x35413b);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(150,150), groundMat);
 ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
 const grid = new THREE.GridHelper(100, 50, 0x536354, 0x455247); grid.position.y=.015; scene.add(grid);
+const floorMarkMat = new THREE.MeshStandardMaterial({color:0x6a776b, roughness:1, transparent:true, opacity:.17});
+for(let i=-4;i<=4;i++){
+ const lineA=new THREE.Mesh(new THREE.BoxGeometry(78,.012,.035),floorMarkMat);
+ lineA.position.set(0,.025,i*8);scene.add(lineA);
+ const lineB=new THREE.Mesh(new THREE.BoxGeometry(.035,.012,78),floorMarkMat);
+ lineB.position.set(i*8,.026,0);scene.add(lineB);
+}
+const coverMat=mat(0x303a38);
+for(let i=0;i<18;i++){
+ const side=i%4, t=(Math.random()-.5)*76;
+ const x=side===0?-38:side===1?38:t, z=side===2?-38:side===3?38:t;
+ const post=new THREE.Mesh(new THREE.BoxGeometry(side<2?.35:1.2,.7,side<2?1.2:.35),coverMat);
+ post.position.set(x,.35,z);post.castShadow=true;scene.add(post);
+}
+
 const arena = [], obstacles = [];
 for (let i=0;i<42;i++) {
   const x=(Math.random()-.5)*64, z=(Math.random()-.5)*64;
@@ -132,9 +147,12 @@ function shoot(){
  for(const z of zombies){const d=(z.x-player.x)**2+(z.z-player.z)**2;if(d<best){best=d;target=z;}}
  if(!target)return;
  const dx=target.x-player.x,dz=target.z-player.z,len=Math.hypot(dx,dz)||1;
- const mesh=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),mat(0xffd78a,.25,.1));
- mesh.position.set(player.x,1.15,player.z);scene.add(mesh);
- bullets.push({mesh,x:player.x,z:player.z,vx:dx/len*22,vz:dz/len*22,life:1.1,damage:1+Math.floor((weaponLevel-1)*.7)});
+ const mesh=new THREE.Mesh(new THREE.SphereGeometry(.055,8,6),mat(0xffd78a,.25,.1));
+ mesh.position.set(player.x+dx/len*.45,1.2,player.z+dz/len*.45);scene.add(mesh);
+ const tracerMat=new THREE.MeshBasicMaterial({color:0xffdca0,transparent:true,opacity:.8});
+ const tracer=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.72,5),tracerMat);
+ tracer.rotation.x=Math.PI/2;tracer.position.set(mesh.position.x,1.2,mesh.position.z);scene.add(tracer);
+ bullets.push({mesh,tracer,x:mesh.position.x,z:mesh.position.z,vx:dx/len*26,vz:dz/len*26,life:.85,damage:1+Math.floor((weaponLevel-1)*.7)});
  player.mesh.rotation.y=Math.atan2(dx,dz);
 }
 function levelUp(){
@@ -219,7 +237,7 @@ function frame(now){
    if(d>z.r+player.r+.2){z.x+=dx/d*z.speed*dt;z.z+=dz/d*z.speed*dt;z.mesh.position.set(z.x,Math.sin(now*.006+i)*.04,z.z);z.mesh.rotation.y=Math.atan2(dx,dz);const gait=Math.sin(now*.009+i)*.42;z.mesh.userData.legs.forEach((limb,k)=>limb.rotation.x=gait*(k===0?-1:1));z.mesh.userData.arms.forEach((limb,k)=>limb.rotation.x=-.25+gait*(k===0?1:-1));}
    else {z.attack-=dt;if(z.attack<=0){let dmg=Math.max(1,z.damage-armor*2);if(player.invuln<=0){player.hp-=dmg;player.invuln=.25;}z.attack=.8;if(player.hp<=0){endGame();break;}}}
   }
-  for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;b.mesh.position.set(b.x,1.15,b.z);let hit=-1;for(let j=0;j<zombies.length;j++)if((zombies[j].x-b.x)**2+(zombies[j].z-b.z)**2<(zombies[j].r+.18)**2){hit=j;break;}if(hit>=0){zombies[hit].hp-=b.damage;if(zombies[hit].hp<=0)killZombie(hit);scene.remove(b.mesh);bullets.splice(i,1);}else if(b.life<=0){scene.remove(b.mesh);bullets.splice(i,1);}}
+  for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;b.mesh.position.set(b.x,1.2,b.z);if(b.tracer){b.tracer.position.set(b.x,1.2,b.z);b.tracer.material.opacity=Math.min(.8,b.life*1.2);}let hit=-1;for(let j=0;j<zombies.length;j++)if((zombies[j].x-b.x)**2+(zombies[j].z-b.z)**2<(zombies[j].r+.18)**2){hit=j;break;}if(hit>=0){zombies[hit].hp-=b.damage;zombies[hit].mesh.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive){o.material.emissive.setHex(0x441111);}});if(zombies[hit].hp<=0)killZombie(hit);scene.remove(b.mesh);if(b.tracer){scene.remove(b.tracer);b.tracer.geometry.dispose();b.tracer.material.dispose();}bullets.splice(i,1);}else if(b.life<=0){scene.remove(b.mesh);if(b.tracer){scene.remove(b.tracer);b.tracer.geometry.dispose();b.tracer.material.dispose();}bullets.splice(i,1);}}
   for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.mesh.position.y=(d.type==='chest'?.35:.45)+Math.sin(now*.004+d.bob)*.12;if((d.x-player.x)**2+(d.z-player.z)**2<1.7){if(d.type==='xp'){xp++;if(xp>=xpNeed)levelUp();}else if(d.type==='heal')player.hp=Math.min(player.maxHp,player.hp+25);else if(d.type==='armor')armor++;else if(d.type==='chest'){const r=Math.random();if(r<.34){player.hp=Math.min(player.maxHp,player.hp+45);showMsg('СУНДУК · АПТЕЧКА');}else if(r<.67){weaponLevel++;showMsg('СУНДУК · УЛУЧШЕНИЕ ОРУЖИЯ');}else{armor++;showMsg('СУНДУК · БРОНЯ +1');}}scene.remove(d.mesh);drops.splice(i,1);updateHud();}}
   if(chestClock<=0){if(elapsed>15&&Math.random()<.4)dropAt(player.x+(Math.random()-.5)*12,player.z+(Math.random()-.5)*12,'chest');chestClock=24;}
   updateHud();
