@@ -1,15 +1,24 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
 
 try {
-  const parts = [];
-  for (let i = 0; i < 20; i++) {
-    const name = 's' + String(i).padStart(2, '0') + '.js';
-    const r = await fetch('./' + name + '?v=s5p');
-    if (!r.ok) throw new Error(name + ' HTTP ' + r.status);
-    parts.push(await r.text());
-  }
-  let code = parts.join('');
+  // Proven complete hierarchical build (no truncation)
+  const r = await fetch('https://raw.githubusercontent.com/holocauxxt-cell/unit1337/5b1e261e7813cda43c776d3f2b5baac321d0f3a3/game.js');
+  if (!r.ok) throw new Error('game.js HTTP ' + r.status);
+  let code = await r.text();
   code = code.replace(/import\s*\*\s*as\s*THREE\s*from\s*['"][^'"]+['"];?\s*/m, '');
+  // Force higher fixed camera after load
+  code = code.replace(
+    /camera\.position\.set\([^)]+\);\s*camera\.lookAt\([^)]+\);/,
+    'camera.position.set(0, 19.5, 15.5); camera.lookAt(0, 0.4, 0);'
+  );
+  code = code.replace(
+    /camera\.position\.y \+= \(15\.5 - camera\.position\.y\) \* Math\.min\(1, dt \* 7\);/,
+    'camera.position.y = 19.5;'
+  );
+  code = code.replace(
+    /const camX = player\.x \+ 0\.5, camZ = player\.z \+ 12;/,
+    'const camX = player.x + 0.3, camZ = player.z + 14.5;'
+  );
   const run = new Function('THREE', code);
   run(THREE);
 } catch (err) {
