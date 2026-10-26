@@ -85,19 +85,25 @@ function makeHumanoid(color, isZombie=false) {
  const root=new THREE.Group(), legs=[], arms=[];
  const torso=new THREE.Mesh(new THREE.BoxGeometry(.62,.8,.34),mat(color)); torso.position.y=1.08; root.add(torso);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),mat(isZombie?0x83947b:0xc3a78b)); head.position.y=1.67; root.add(head);
+ const pelvis=new THREE.Mesh(new THREE.BoxGeometry(.48,.24,.3),mat(isZombie?0x394238:0x303638));pelvis.position.y=.66;root.add(pelvis);
  for (const s of [-1,1]) {
-  const leg=new THREE.Mesh(new THREE.BoxGeometry(.22,.65,.24),mat(isZombie?0x465044:0x252d32)); leg.position.set(s*.18,.39,0); root.add(leg); legs.push(leg);
-  const arm=new THREE.Mesh(new THREE.BoxGeometry(.19,.62,.22),mat(color)); arm.position.set(s*.4,1.08,0); root.add(arm); arms.push(arm);
+  const legPivot=new THREE.Group();legPivot.position.set(s*.18,.67,0);root.add(legPivot);
+  const leg=new THREE.Mesh(new THREE.BoxGeometry(.22,.65,.24),mat(isZombie?0x465044:0x252d32));leg.position.y=-.29;legPivot.add(leg);legs.push(legPivot);
+  const armPivot=new THREE.Group();armPivot.position.set(s*.4,1.34,0);root.add(armPivot);
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(.19,.62,.22),mat(color));arm.position.y=-.27;armPivot.add(arm);
+  const hand=new THREE.Mesh(new THREE.SphereGeometry(.085,8,6),mat(isZombie?0x83947b:0xc3a78b));hand.position.set(0,-.55,.03);armPivot.add(hand);arms.push(armPivot);
  }
+ let rifle=null, muzzle=null;
  if (!isZombie) {
-  const vest=new THREE.Mesh(new THREE.BoxGeometry(.65,.46,.37),mat(0x252e2d)); vest.position.set(0,1.12,-.01); root.add(vest);
-  // Rifle points along local +Z, matching the operator's facing direction.
-  const rifle=new THREE.Mesh(new THREE.BoxGeometry(.12,.13,.9),mat(0x171b1d,.45,.5)); rifle.position.set(.27,1.22,.47); root.add(rifle);
-  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.38,8),mat(0x080b0c,.4,.6)); barrel.rotation.x=Math.PI/2; barrel.position.set(.27,1.22,.98); root.add(barrel);
-  const stock=new THREE.Mesh(new THREE.BoxGeometry(.14,.17,.28),mat(0x343a38)); stock.position.set(.27,1.22,.08); root.add(stock);
-  const sight=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.12),mat(0x080b0c,.4,.4)); sight.position.set(.27,1.32,.52); root.add(sight);
+  const rifleGroup=new THREE.Group();
+  const rifle=new THREE.Mesh(new THREE.BoxGeometry(.12,.13,.9),mat(0x171b1d,.45,.5)); rifle.position.set(0,0,.12); rifleGroup.add(rifle);
+  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.38,8),mat(0x080b0c,.4,.6)); barrel.rotation.x=Math.PI/2; barrel.position.set(0,0,.72); rifleGroup.add(barrel);
+  const stock=new THREE.Mesh(new THREE.BoxGeometry(.14,.17,.28),mat(0x343a38)); stock.position.set(0,0,-.28); rifleGroup.add(stock);
+  const sight=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.12),mat(0x080b0c,.4,.4)); sight.position.set(0,.1,.16); rifleGroup.add(sight);
+  rifleGroup.position.set(.27,1.22,.36);root.add(rifleGroup);muzzle=new THREE.Object3D();muzzle.position.set(0,0,.95);rifleGroup.add(muzzle);
  }
- root.userData={legs,arms,torso,head,isZombie};
+ root.userData={legs,arms,torso,head,pelvis,isZombie,rifle,muzzle,fireKick:0,hitFlash:0,attackT:0,phase:Math.random()*Math.PI*2};
+
  root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
  return root;
 }
@@ -181,7 +187,9 @@ function dropAt(x,z,type){
  mesh.position.set(x,type==='chest'?.35:.45,z);mesh.castShadow=true;scene.add(mesh);drops.push({mesh,x,z,type,bob:Math.random()*6});
 }
 function killZombie(i){
- const z=zombies[i];scene.remove(z.mesh);zombies.splice(i,1);kills++;waveKills++;
+ const z=zombies[i];
+ z.dead=true;z.deathT=.52;z.mesh.userData.deathDir=(Math.random()<.5?-1:1);z.mesh.userData.legs.forEach(l=>{l.rotation.x=-.7;});z.mesh.userData.arms.forEach((a,k)=>{a.rotation.x=k===0?-1.1:-.8;});z.mesh.userData.torso.rotation.x=.28;
+ zombies.splice(i,1);scene.add(z.mesh);z.mesh.userData.remains=true;kills++;waveKills++;
  if(Math.random()<.16)dropAt(z.x,z.z,Math.random()<.5?'heal':'armor');else dropAt(z.x,z.z,'xp');
  if(z.tough){dropAt(z.x,z.z,'chest');showMsg('ЭЛИТА УСТРАНЕНА · ДОБЫЧА');}
  if(waveKills>=wave*8){wave++;waveKills=0;dropAt(player.x+2,player.z-2,'chest');showMsg('ВОЛНА '+wave+' · ПОДКРЕПЛЕНИЕ');}
@@ -193,12 +201,16 @@ function shoot(){
  for(const z of zombies){const d=(z.x-player.x)**2+(z.z-player.z)**2;if(d<best){best=d;target=z;}}
  if(!target)return;
  const dx=target.x-player.x,dz=target.z-player.z,len=Math.hypot(dx,dz)||1;
- const mesh=new THREE.Sprite(new THREE.SpriteMaterial({color:0xffe1a0,transparent:true,opacity:.95}));
- mesh.scale.set(.16,.16,1);mesh.position.set(player.x+dx/len*.45,1.2,player.z+dz/len*.45);scene.add(mesh);
- const tracer=new THREE.Sprite(new THREE.SpriteMaterial({color:0xffdca0,transparent:true,opacity:.75,blending:THREE.AdditiveBlending,depthWrite:false}));
- tracer.scale.set(.48,.045,1);tracer.position.set(mesh.position.x,1.2,mesh.position.z);scene.add(tracer);
- bullets.push({mesh,tracer,x:mesh.position.x,z:mesh.position.z,vx:dx/len*26,vz:dz/len*26,life:.85,damage:1+Math.floor((weaponLevel-1)*.7)});
  player.mesh.rotation.y=Math.atan2(dx,dz);
+ const ud=player.mesh.userData;ud.fireKick=.12;
+ const muzzle=ud.muzzle?ud.muzzle.getWorldPosition(new THREE.Vector3()):new THREE.Vector3(player.x+dx/len*.55,1.2,player.z+dz/len*.55);
+ const mesh=new THREE.Sprite(new THREE.SpriteMaterial({color:0xfff1bd,transparent:true,opacity:1,depthWrite:false}));
+ mesh.scale.set(.12,.12,1);mesh.position.copy(muzzle);scene.add(mesh);
+ const tracer=new THREE.Sprite(new THREE.SpriteMaterial({color:0xffdca0,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));
+ tracer.scale.set(.58,.055,1);tracer.position.copy(muzzle);scene.add(tracer);
+ const flash=new THREE.Sprite(new THREE.SpriteMaterial({color:0xffb84d,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false}));
+ flash.scale.set(.32,.32,1);flash.position.copy(muzzle);scene.add(flash);
+ bullets.push({mesh,tracer,flash,x:muzzle.x,z:muzzle.z,vx:dx/len*29,vz:dz/len*29,life:.62,damage:1+Math.floor((weaponLevel-1)*.7)});
 }
 function levelUp(){
  level++;xp-=xpNeed;xpNeed=Math.ceil(xpNeed*1.35);running=false;
