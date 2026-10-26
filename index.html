@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#0a0e12">
   <title>UNIT 1337 — Operation Survivors</title>
-  <link rel="stylesheet" href="style.css?v=stage5d">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <div id="boot">
@@ -49,7 +49,7 @@
       </div>
 
       <button class="btn primary" id="btnStart">НАЧАТЬ МИССИЮ</button>
-      <p class="hint footer-hint">Рекомендуется горизонтальный режим на телефоне · справа превью оператора</p>
+      <p class="hint footer-hint">Рекомендуется горизонтальный режим на телефоне</p>
     </div>
   </div>
 
@@ -80,20 +80,18 @@
 
   <div id="pause" class="screen hidden">
     <div class="menu-card">
-      <div class="menu-badge">SYSTEM</div>
       <h2>ПАУЗА</h2>
-      <p id="pauseStats" class="hint pause-stats">—</p>
+      <p id="pauseStats">—</p>
       <button class="btn primary" id="btnResume">ПРОДОЛЖИТЬ</button>
       <button class="btn" id="btnRestart">ЗАНОВО</button>
-      <button class="btn" id="btnPauseMenu">В ГЛАВНОЕ МЕНЮ</button>
-      <p class="hint footer-hint">ESC — продолжить</p>
+      <button class="btn" id="btnMenu">В ГЛАВНОЕ МЕНЮ</button>
     </div>
   </div>
 
   <div id="levelup" class="screen hidden">
     <div class="menu-card">
       <h2>ПОВЫШЕНИЕ РАНГА</h2>
-      <p class="hint">Выбери усиление</p>
+      <p>Выбери усиление</p>
       <div id="choices" class="choices"></div>
     </div>
   </div>
@@ -101,17 +99,12 @@
   <div id="over" class="screen hidden">
     <div class="menu-card">
       <h2>МИССИЯ ПРОВАЛЕНА</h2>
-      <p id="overStats" class="hint"></p>
-      <button class="btn primary" id="btnRetry">ПОВТОР</button>
-      <button class="btn" id="btnMenu">В МЕНЮ</button>
+      <p id="overStats">—</p>
+      <button class="btn primary" id="btnAgain">ПОВТОР</button>
+      <button class="btn" id="btnOverMenu">В МЕНЮ</button>
     </div>
   </div>
 
-  <div id="joy" class="hidden">
-    <div id="joyBase"></div>
-    <div id="joyKnob"></div>
-  </div>
-
-  <script type="module" src="main.js?v=p26"></script>
+  <script type="module" src="main.js?v=stage5fix"></script>
 </body>
 </html>
