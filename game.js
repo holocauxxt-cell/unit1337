@@ -18,7 +18,7 @@ const mat = (color, roughness=.82, metalness=.02) => new THREE.MeshStandardMater
 const groundMat = mat(0x35413b);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(150,150), groundMat);
 ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
-const grid = new THREE.GridHelper(100, 50, 0x536354, 0x455247); grid.position.y=.015; scene.add(grid);
+const grid = new THREE.GridHelper(100, 50, 0x536354, 0x455247); grid.position.y=.015; scene.add(grid); grid.visible=false;
 const floorMarkMat = new THREE.MeshStandardMaterial({color:0x6a776b, roughness:1, transparent:true, opacity:.17});
 for(let i=-4;i<=4;i++){
  const lineA=new THREE.Mesh(new THREE.BoxGeometry(78,.012,.035),floorMarkMat);
@@ -26,12 +26,44 @@ for(let i=-4;i<=4;i++){
  const lineB=new THREE.Mesh(new THREE.BoxGeometry(.035,.012,78),floorMarkMat);
  lineB.position.set(i*8,.026,0);scene.add(lineB);
 }
-const coverMat=mat(0x303a38);
-for(let i=0;i<18;i++){
- const side=i%4, t=(Math.random()-.5)*76;
- const x=side===0?-38:side===1?38:t, z=side===2?-38:side===3?38:t;
- const post=new THREE.Mesh(new THREE.BoxGeometry(side<2?.35:1.2,.7,side<2?1.2:.35),coverMat);
- post.position.set(x,.35,z);post.castShadow=true;scene.add(post);
+const coverMat=mat(0x303a38), concrete=mat(0x59615c), rust=mat(0x66513e), hazard=mat(0xb69b54);
+function addBuilding(x,z,w,h,d,color=0x424b49){
+ const group=new THREE.Group();
+ const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));body.position.y=h/2;body.castShadow=true;body.receiveShadow=true;group.add(body);
+ const roof=new THREE.Mesh(new THREE.BoxGeometry(w+.12,.12,d+.12),mat(0x262f30));roof.position.y=h+.06;roof.castShadow=true;group.add(roof);
+ const door=new THREE.Mesh(new THREE.BoxGeometry(Math.min(1.2,w*.22),Math.min(2.1,h*.65),.06),mat(0x202827));door.position.set(0,Math.min(2.1,h*.65)/2,d/2+.035);group.add(door);
+ group.position.set(x,0,z);scene.add(group);
+ // Building footprint participates in movement collision.
+ obstacles.push({x,z,hw:w/2,hz:d/2,h,mesh:body});
+}
+addBuilding(-25,-24,12,5,9,0x414b49);addBuilding(24,-25,10,4,12,0x4c5149);
+addBuilding(-27,22,9,3.4,11,0x3c4846);addBuilding(25,23,13,5.4,8,0x454b46);
+for(let i=0;i<12;i++){
+ const x=(Math.random()-.5)*58,z=(Math.random()-.5)*58;
+ if(Math.hypot(x,z)<10)continue;
+ const w=2.4+Math.random()*3.5,d=1.2+Math.random()*2.2,h=.65+Math.random()*1.1;
+ const block=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(i%3?0x505953:0x5c5140));
+ block.position.set(x,h/2,z);block.castShadow=true;block.receiveShadow=true;scene.add(block);
+ obstacles.push({x,z,hw:w/2,hz:d/2,h,mesh:block});
+}
+for(let i=0;i<8;i++){
+ const x=-32+i*9,z=(i%2? -8:8);
+ const barrier=new THREE.Mesh(new THREE.BoxGeometry(3.2,.9,.65),concrete);
+ barrier.position.set(x,.45,z);barrier.castShadow=true;scene.add(barrier);
+ obstacles.push({x,z,hw:1.6,hz:.325,h:.9,mesh:barrier});
+}
+for(let i=0;i<10;i++){
+ const x=-34+Math.random()*68,z=-34+Math.random()*68;
+ if(Math.hypot(x,z)<9)continue;
+ const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.13,.17,.7,7),mat(0x4d5751));
+ mesh.position.set(x,.35,z);mesh.castShadow=true;scene.add(mesh);
+ const lamp=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),new THREE.MeshBasicMaterial({color:0xe3b56c}));
+ lamp.position.set(x,.76,z);scene.add(lamp);
+}
+for(let i=0;i<6;i++){
+ const x=-28+i*11,z=(i%2===0?-15:15);
+ const stripe=new THREE.Mesh(new THREE.BoxGeometry(1.6,.018,.14),hazard);
+ stripe.position.set(x,.04,z);scene.add(stripe);
 }
 
 const arena = [], obstacles = [];
@@ -48,7 +80,7 @@ const OPS = [
 ];
 let selectedOp=0, running=false, paused=false, dead=false, last=0, elapsed=0, fireClock=0, spawnClock=0, wave=1, waveKills=0, kills=0, level=1, xp=0, xpNeed=5, armor=0, weaponLevel=1, chestClock=0, messageClock=0;
 const keys={}, zombies=[], bullets=[], drops=[];
-const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0,vaultT:0,vaultDur:.55,vaultY:0,vaultX:0,vaultZ:0,rollT:0,rollDur:.52,rollX:0,rollZ:0,rollSide:1,faceAngle:0,moveBlend:0};
+const player={x:0,z:0,hp:100,maxHp:100,speed:7.2,r:.42,dash:0,dashCd:0,invuln:0,moveX:0,moveZ:0,mesh:null,aim:0,vaultT:0,vaultDur:.55,vaultY:0,vaultX:0,vaultZ:0,vaultStartX:0,vaultStartZ:0,vaultEndX:0,vaultEndZ:0,vaultHeight:0,rollT:0,rollDur:.52,rollX:0,rollZ:0,rollSide:1,faceAngle:0,moveBlend:0};
 function makeHumanoid(color, isZombie=false) {
  const root=new THREE.Group(), legs=[], arms=[];
  const torso=new THREE.Mesh(new THREE.BoxGeometry(.62,.8,.34),mat(color)); torso.position.y=1.08; root.add(torso);
@@ -91,15 +123,29 @@ function startRoll(mx,mz){
  player.rollX=dx/len;player.rollZ=dz/len;player.rollT=player.rollDur;player.dashCd=1.05;player.invuln=.38;player.rollSide=Math.random()<.5?-1:1;return true;
 }
 function tryVault(mx,mz){
- if(player.vaultT>0||player.dashCd>0||Math.hypot(mx,mz)<.25)return false;
+ if(player.vaultT>0||player.rollT>0||Math.hypot(mx,mz)<.25)return false;
  const len=Math.hypot(mx,mz)||1, dx=mx/len,dz=mz/len;
- const hit=blockedAt(player.x+dx*.55,player.z+dz*.55,player.r*.8);
- if(!hit||hit.h>1.75||player.moveBlend<.45)return false;
- const landing=blockedAt(player.x+dx*(hit.hw+player.r+.55),player.z+dz*(hit.hz+player.r+.55),player.r);
- if(landing)return false;
- player.vaultT=player.vaultDur;
- player.vaultX=dx;player.vaultZ=dz;player.vaultY=Math.min(1.35,.65+hit.h*.28);
- player.invuln=Math.max(player.invuln,.25);
+ // Find the first obstacle directly in the player's travel lane, then land beyond its far edge.
+ let hit=null, best=Infinity;
+ for(const o of obstacles){
+  const along=(o.x-player.x)*dx+(o.z-player.z)*dz;
+  if(along<.25||along>2.8)continue;
+  const side=Math.abs((o.x-player.x)*(-dz)+(o.z-player.z)*dx);
+  const lateral= Math.abs(dx)>Math.abs(dz)?o.hz:o.hw;
+  if(side>lateral+player.r+.22)continue;
+  if(along<best){best=along;hit=o;}
+ }
+ if(!hit||hit.h>2.55||hit.h<.35)return false;
+ const alongX=dx*(best+((Math.abs(dx)>Math.abs(dz)?hit.hw:hit.hz))+player.r+.2);
+ const alongZ=dz*(best+((Math.abs(dx)>Math.abs(dz)?hit.hw:hit.hz))+player.r+.2);
+ const lx=player.x+alongX,lz=player.z+alongZ;
+ if(blockedAt(lx,lz,player.r*.9))return false;
+ player.vaultT=player.vaultDur=Math.max(.48,Math.min(.95,.44+hit.h*.18));
+ player.vaultX=dx;player.vaultZ=dz;player.vaultY=Math.min(2.15,.7+hit.h*.42);
+ player.vaultStartX=player.x;player.vaultStartZ=player.z;
+ player.vaultEndX=lx;player.vaultEndZ=lz;
+ player.vaultHeight=hit.h;
+ player.invuln=Math.max(player.invuln,.35);
  return true;
 }
 function showMsg(t){const e=$('msg');if(e)e.textContent=t;messageClock=2.6;}
@@ -147,11 +193,10 @@ function shoot(){
  for(const z of zombies){const d=(z.x-player.x)**2+(z.z-player.z)**2;if(d<best){best=d;target=z;}}
  if(!target)return;
  const dx=target.x-player.x,dz=target.z-player.z,len=Math.hypot(dx,dz)||1;
- const mesh=new THREE.Mesh(new THREE.SphereGeometry(.055,8,6),mat(0xffd78a,.25,.1));
- mesh.position.set(player.x+dx/len*.45,1.2,player.z+dz/len*.45);scene.add(mesh);
- const tracerMat=new THREE.MeshBasicMaterial({color:0xffdca0,transparent:true,opacity:.8});
- const tracer=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.72,5),tracerMat);
- tracer.rotation.x=Math.PI/2;tracer.position.set(mesh.position.x,1.2,mesh.position.z);scene.add(tracer);
+ const mesh=new THREE.Sprite(new THREE.SpriteMaterial({color:0xffe1a0,transparent:true,opacity:.95}));
+ mesh.scale.set(.16,.16,1);mesh.position.set(player.x+dx/len*.45,1.2,player.z+dz/len*.45);scene.add(mesh);
+ const tracer=new THREE.Sprite(new THREE.SpriteMaterial({color:0xffdca0,transparent:true,opacity:.75,blending:THREE.AdditiveBlending,depthWrite:false}));
+ tracer.scale.set(.48,.045,1);tracer.position.set(mesh.position.x,1.2,mesh.position.z);scene.add(tracer);
  bullets.push({mesh,tracer,x:mesh.position.x,z:mesh.position.z,vx:dx/len*26,vz:dz/len*26,life:.85,damage:1+Math.floor((weaponLevel-1)*.7)});
  player.mesh.rotation.y=Math.atan2(dx,dz);
 }
@@ -201,17 +246,17 @@ function frame(now){
     const axisX=blockedAt(nx,player.z),axisZ=blockedAt(player.x,nz);
     if(!axisX)player.x=nx;
     if(!axisZ)player.z=nz;
-    if((axisX||axisZ)&&player.dashCd<=0)tryVault(mx,mz);
+    if((axisX||axisZ)&&tryVault(mx,mz)){};
    }
   }
   if(player.vaultT>0){
    const progress=1-player.vaultT/player.vaultDur;
-   const stepX=player.vaultX*speed*dt*1.15,stepZ=player.vaultZ*speed*dt*1.15;
-   if(!blockedAt(player.x+stepX,player.z))player.x+=stepX;
-   if(!blockedAt(player.x,player.z+stepZ))player.z+=stepZ;
+   const eased=progress*progress*(3-2*progress);
+   player.x=player.vaultStartX+(player.vaultEndX-player.vaultStartX)*eased;
+   player.z=player.vaultStartZ+(player.vaultEndZ-player.vaultStartZ)*eased;
+   player.vaultY=Math.sin(progress*Math.PI)*player.vaultY;
    player.vaultT=Math.max(0,player.vaultT-dt);
-   player.vaultY=Math.sin(progress*Math.PI)*Math.min(1.25,.62+((blockedAt(player.x+player.vaultX*.25,player.z+player.vaultZ*.25)||{}).h||.5)*.25);
-   if(player.vaultT===0)player.vaultY=0;
+   if(player.vaultT===0){player.vaultY=0;player.x=player.vaultEndX;player.z=player.vaultEndZ;}
   }
   player.x=Math.max(-48,Math.min(48,player.x));player.z=Math.max(-48,Math.min(48,player.z));
   const dashY=player.dash>0?Math.sin((.22-player.dash)/.22*Math.PI)*.28:0;
@@ -237,7 +282,7 @@ function frame(now){
    if(d>z.r+player.r+.2){z.x+=dx/d*z.speed*dt;z.z+=dz/d*z.speed*dt;z.mesh.position.set(z.x,Math.sin(now*.006+i)*.04,z.z);z.mesh.rotation.y=Math.atan2(dx,dz);const gait=Math.sin(now*.009+i)*.42;z.mesh.userData.legs.forEach((limb,k)=>limb.rotation.x=gait*(k===0?-1:1));z.mesh.userData.arms.forEach((limb,k)=>limb.rotation.x=-.25+gait*(k===0?1:-1));}
    else {z.attack-=dt;if(z.attack<=0){let dmg=Math.max(1,z.damage-armor*2);if(player.invuln<=0){player.hp-=dmg;player.invuln=.25;}z.attack=.8;if(player.hp<=0){endGame();break;}}}
   }
-  for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;b.mesh.position.set(b.x,1.2,b.z);if(b.tracer){b.tracer.position.set(b.x,1.2,b.z);b.tracer.material.opacity=Math.min(.8,b.life*1.2);}let hit=-1;for(let j=0;j<zombies.length;j++)if((zombies[j].x-b.x)**2+(zombies[j].z-b.z)**2<(zombies[j].r+.18)**2){hit=j;break;}if(hit>=0){zombies[hit].hp-=b.damage;zombies[hit].mesh.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive){o.material.emissive.setHex(0x441111);}});if(zombies[hit].hp<=0)killZombie(hit);scene.remove(b.mesh);if(b.tracer){scene.remove(b.tracer);b.tracer.geometry.dispose();b.tracer.material.dispose();}bullets.splice(i,1);}else if(b.life<=0){scene.remove(b.mesh);if(b.tracer){scene.remove(b.tracer);b.tracer.geometry.dispose();b.tracer.material.dispose();}bullets.splice(i,1);}}
+  for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;b.mesh.position.set(b.x,1.2,b.z);if(b.tracer){b.tracer.position.set(b.x-b.vx*.012,1.2,b.z-b.vz*.012);b.tracer.material.opacity=Math.min(.8,b.life*1.2);b.tracer.scale.set(.48,.045,1);}let hit=-1;for(let j=0;j<zombies.length;j++)if((zombies[j].x-b.x)**2+(zombies[j].z-b.z)**2<(zombies[j].r+.18)**2){hit=j;break;}if(hit>=0){zombies[hit].hp-=b.damage;zombies[hit].mesh.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive){o.material.emissive.setHex(0x441111);}});if(zombies[hit].hp<=0)killZombie(hit);scene.remove(b.mesh);if(b.tracer){scene.remove(b.tracer);b.tracer.geometry.dispose();b.tracer.material.dispose();}bullets.splice(i,1);}else if(b.life<=0){scene.remove(b.mesh);if(b.tracer){scene.remove(b.tracer);b.tracer.geometry.dispose();b.tracer.material.dispose();}bullets.splice(i,1);}}
   for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.mesh.position.y=(d.type==='chest'?.35:.45)+Math.sin(now*.004+d.bob)*.12;if((d.x-player.x)**2+(d.z-player.z)**2<1.7){if(d.type==='xp'){xp++;if(xp>=xpNeed)levelUp();}else if(d.type==='heal')player.hp=Math.min(player.maxHp,player.hp+25);else if(d.type==='armor')armor++;else if(d.type==='chest'){const r=Math.random();if(r<.34){player.hp=Math.min(player.maxHp,player.hp+45);showMsg('СУНДУК · АПТЕЧКА');}else if(r<.67){weaponLevel++;showMsg('СУНДУК · УЛУЧШЕНИЕ ОРУЖИЯ');}else{armor++;showMsg('СУНДУК · БРОНЯ +1');}}scene.remove(d.mesh);drops.splice(i,1);updateHud();}}
   if(chestClock<=0){if(elapsed>15&&Math.random()<.4)dropAt(player.x+(Math.random()-.5)*12,player.z+(Math.random()-.5)*12,'chest');chestClock=24;}
   updateHud();
