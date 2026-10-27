@@ -405,10 +405,12 @@ function animateOperator(mesh, dt, time, opts) {
   let diff = faceAngle - fy;
   while (diff > Math.PI) diff -= Math.PI * 2;
   while (diff < -Math.PI) diff += Math.PI * 2;
-  // Track angular velocity for a short, controlled counter-rotation of shoulders and head.
-  const turnTarget = THREE.MathUtils.clamp(diff / Math.max(dt, 0.016), -4.0, 4.0);
-  ud.turnRate = damp(ud.turnRate || 0, turnTarget, 9, dt);
-  mesh.rotation.y = fy + diff * Math.min(1, dt * 10);
+  // Use the actual smoothed turn step as angular velocity, so torso/head counter-rotation
+  // follows the operator instead of snapping when the facing target changes quickly.
+  const turnStep = diff * Math.min(1, dt * 10);
+  mesh.rotation.y = fy + turnStep;
+  const turnTarget = THREE.MathUtils.clamp(turnStep / Math.max(dt, 0.016), -3.2, 3.2);
+  ud.turnRate = damp(ud.turnRate || 0, turnTarget, 8, dt);
   let state = 'idle';
   if (vaulting) state = 'vault'; else if (rolling) state = 'roll'; else if (reloading) state = 'reload';
   else if (hit) state = 'hit'; else if (moving && sprint > 0.55) state = 'run';
