@@ -334,3 +334,6 @@ body.operator-test-mode .preview-label { z-index: 4; pointer-events: none; }
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* Version 13: refined compact shoulders and bent-in tactical arms. */
+#build-version { border-color: rgba(155, 190, 167, .75); }
