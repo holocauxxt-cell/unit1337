@@ -137,6 +137,14 @@ function makeLimb(w, h, d, color, rough = 0.85, metal = 0.02, edged = true) {
   return m;
 }
 
+function makeDetail(w, h, d, color, rough = 0.78, metal = 0.04) {
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), mat(color, rough, metal));
+  mesh.scale.set(w, h, d);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
 function makeOperator(color) {
   const root = new THREE.Group();
   const isGhost = color === 0x5a7a62 || color === OPS[0].color;
@@ -148,6 +156,23 @@ function makeOperator(color) {
   const torso = new THREE.Group(); torso.position.y = 0.10; pelvis.add(torso);
   const chest = makeLimb(0.50, 0.54, 0.30, vest, 0.72); chest.position.y = 0.28; torso.add(chest);
   const plate = makeLimb(0.42, 0.34, 0.07, 0x1a2220, 0.5, 0.15); plate.position.set(0, 0.26, 0.17); torso.add(plate);
+  // Layered tactical kit: soft-edged shoulder armor, segmented magazine pouches and side utility gear.
+  const plateInset = makeDetail(0.155, 0.115, 0.025, 0x303a38, 0.62, 0.12);
+  plateInset.position.set(0, 0.29, 0.214); torso.add(plateInset);
+  const plateMark = makeLimb(0.12, 0.018, 0.012, 0x899184, 0.7, 0.1, false);
+  plateMark.position.set(0, 0.37, 0.239); torso.add(plateMark);
+  for (let p = 0; p < 3; p++) {
+    const pouch = makeDetail(0.055, 0.075, 0.045, p === 1 ? 0x303b37 : 0x26302d, 0.9, 0.01);
+    pouch.position.set(-0.13 + p * 0.13, 0.08, 0.205); torso.add(pouch);
+    const flap = makeLimb(0.075, 0.025, 0.012, 0x414b43, 0.9, 0.01, false);
+    flap.position.set(-0.13 + p * 0.13, 0.105, 0.244); torso.add(flap);
+  }
+  const belt = makeLimb(0.47, 0.075, 0.31, 0x202824, 0.92, 0.02);
+  belt.position.set(0, -0.01, 0); pelvis.add(belt);
+  const radio = makeLimb(0.075, 0.14, 0.055, 0x202725, 0.72, 0.08);
+  radio.position.set(-0.235, 0.27, -0.025); torso.add(radio);
+  const radioAntenna = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.008, 0.09, 6), mat(0x141a18, 0.5, 0.2));
+  radioAntenna.position.set(-0.24, 0.385, -0.025); torso.add(radioAntenna);
   const neck = makeLimb(0.11, 0.09, 0.11, skin, 0.9, 0.02, false); neck.position.y = 0.58; torso.add(neck);
 
   const head = new THREE.Group(); head.position.y = 0.70; torso.add(head);
@@ -184,10 +209,21 @@ function makeOperator(color) {
   const legs = [];
   for (const side of [-1, 1]) {
     const hip = new THREE.Group(); hip.position.set(side * 0.13, -0.04, 0.02); pelvis.add(hip);
-    const thigh = makeLimb(0.15, 0.34, 0.17, pants); thigh.position.y = -0.17; hip.add(thigh);
+    const thigh = makeLimb(0.16, 0.34, 0.18, pants); thigh.position.y = -0.17; hip.add(thigh);
+    const thighPocket = makeLimb(0.105, 0.12, 0.035, 0x303a3d, 0.9, 0.01);
+    thighPocket.position.set(side * 0.015, -0.19, 0.092); hip.add(thighPocket);
+    const pocketFlap = makeLimb(0.11, 0.025, 0.012, 0x59604f, 0.9, 0.01, false);
+    pocketFlap.position.set(side * 0.015, -0.145, 0.114); hip.add(pocketFlap);
     const knee = new THREE.Group(); knee.position.y = -0.34; hip.add(knee);
-    const shin = makeLimb(0.13, 0.32, 0.15, pants); shin.position.y = -0.16; knee.add(shin);
-    const foot = makeLimb(0.13, 0.07, 0.24, boot); foot.position.set(0, -0.34, 0.04); knee.add(foot);
+    const kneePad = makeDetail(0.095, 0.105, 0.045, 0x252d2b, 0.72, 0.08);
+    kneePad.position.set(0, -0.015, 0.085); knee.add(kneePad);
+    const kneeRidge = makeLimb(0.09, 0.018, 0.012, 0x59604f, 0.82, 0.02, false);
+    kneeRidge.position.set(0, 0.015, 0.125); knee.add(kneeRidge);
+    const shin = makeLimb(0.135, 0.32, 0.155, pants); shin.position.y = -0.16; knee.add(shin);
+    const boot = makeLimb(0.14, 0.09, 0.25, 0x202725, 0.78, 0.04);
+    boot.position.set(0, -0.32, 0.055); knee.add(boot);
+    const sole = makeLimb(0.145, 0.025, 0.26, 0x101514, 0.95, 0.01, false);
+    sole.position.set(0, -0.365, 0.06); knee.add(sole);
     legs.push({ hip, knee, thigh, shin });
   }
 
@@ -196,11 +232,19 @@ function makeOperator(color) {
     const shoulder = new THREE.Group();
     shoulder.position.set(side * 0.30, 0.48, 0.02);
     torso.add(shoulder);
-    const upper = makeLimb(0.12, 0.28, 0.13, vest); upper.position.y = -0.13; shoulder.add(upper);
+    const shoulderPad = makeDetail(0.105, 0.105, 0.105, 0x303a35, 0.8, 0.02);
+    shoulderPad.position.set(0, -0.025, 0.005); shoulder.add(shoulderPad);
+    const upper = makeLimb(0.135, 0.28, 0.14, vest); upper.position.y = -0.13; shoulder.add(upper);
+    const upperStrap = makeLimb(0.145, 0.035, 0.145, 0x222b28, 0.9, 0.01, false);
+    upperStrap.position.set(0, -0.08, 0); shoulder.add(upperStrap);
     const elbow = new THREE.Group(); elbow.position.y = -0.28; shoulder.add(elbow);
-    const forearm = makeLimb(0.11, 0.26, 0.11, vest); forearm.position.y = -0.12; elbow.add(forearm);
+    const elbowPad = makeDetail(0.075, 0.065, 0.07, 0x252d2b, 0.8, 0.02);
+    elbowPad.position.set(0, -0.015, 0.025); elbow.add(elbowPad);
+    const forearm = makeLimb(0.12, 0.26, 0.12, vest); forearm.position.y = -0.12; elbow.add(forearm);
     const wrist = new THREE.Group(); wrist.position.y = -0.26; elbow.add(wrist);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), mat(skin));
+    const glove = makeDetail(0.062, 0.07, 0.065, 0x171d1b, 0.95, 0.01);
+    glove.position.set(0, -0.015, 0.015); wrist.add(glove);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), mat(0x252c28, 0.95));
     hand.castShadow = true; wrist.add(hand);
     arms.push({ shoulder, elbow, wrist, upper, forearm, hand, side });
   }
@@ -324,8 +368,8 @@ function animateOperator(mesh, dt, time, opts) {
   mesh.rotation.y = fy + diff * Math.min(1, dt * 10);
   let state = 'idle';
   if (vaulting) state = 'vault'; else if (rolling) state = 'roll'; else if (reloading) state = 'reload';
-  else if (hit) state = 'hit'; else if (firing) state = 'fire'; else if (moving && sprint > 0.55) state = 'run';
-  else if (moving) state = 'walk'; else if (aiming) state = 'aim';
+  else if (hit) state = 'hit'; else if (moving && sprint > 0.55) state = 'run';
+  else if (moving) state = 'walk'; else if (firing) state = 'fire'; else if (aiming) state = 'aim';
   ud.animState = state;
   const legs = ud.legs, arms = ud.arms, torso = ud.torso, pelvis = ud.pelvis, head = ud.head, rifle = ud.rifleGroup;
   const isRun = state === 'run', isWalk = state === 'walk' || isRun;
