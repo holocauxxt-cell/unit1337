@@ -147,7 +147,8 @@ function makeDetail(w, h, d, color, rough = 0.78, metal = 0.04) {
 
 function makeOperator(color) {
   const root = new THREE.Group();
-  const isGhost = color === 0x5a7a62 || color === OPS[0].color;
+  const opIndex = Math.max(0, OPS.findIndex(op => op.color === color));
+  const isGhost = opIndex === 0;
   const skin = 0xe0b892, pants = 0x3a4550, boot = 0x1e242a, vest = color;
 
   const pelvis = new THREE.Group(); pelvis.position.y = 0.82; root.add(pelvis);
@@ -234,6 +235,21 @@ function makeOperator(color) {
     nvgArm.position.set(0, 0.065, 0.18); nvgArm.rotation.x = -0.32; head.add(nvgArm);
     const nvgPod = makeDetail(0.035, 0.065, 0.045, 0x151b19, 0.42, 0.35);
     nvgPod.position.set(0, 0.025, 0.22); head.add(nvgPod);
+    if (opIndex === 1) {
+      const lowerMask = makeDetail(0.105, 0.07, 0.105, 0x202722, 0.92, 0.02);
+      lowerMask.position.set(0, -0.085, 0.075); head.add(lowerMask);
+      const helmetRail = makeLimb(0.025, 0.025, 0.15, 0x667064, 0.65, 0.12, false);
+      helmetRail.position.set(0.155, 0.045, -0.005); head.add(helmetRail);
+      const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.008, 0.12, 6), mat(0x252d28, 0.7, 0.05));
+      antenna.position.set(-0.12, 0.12, -0.02); antenna.rotation.z = -0.18; head.add(antenna);
+    } else if (opIndex === 2) {
+      const hood = makeDetail(0.145, 0.12, 0.13, 0x252d32, 0.95, 0.01);
+      hood.position.set(0, -0.045, -0.015); head.add(hood);
+      const faceShield = makeDetail(0.13, 0.09, 0.055, 0x101719, 0.28, 0.22);
+      faceShield.position.set(0, -0.035, 0.132); head.add(faceShield);
+      const shieldRim = makeLimb(0.15, 0.018, 0.018, 0x56615c, 0.7, 0.08, false);
+      shieldRim.position.set(0, 0.012, 0.17); head.add(shieldRim);
+    }
   }
 
   const legs = [];
@@ -422,9 +438,10 @@ function animateOperator(mesh, dt, time, opts) {
   ud.animState = state;
   const legs = ud.legs, arms = ud.arms, torso = ud.torso, pelvis = ud.pelvis, head = ud.head, rifle = ud.rifleGroup;
   const isRun = state === 'run', isWalk = state === 'walk' || isRun;
-  const cadence = isRun ? 9.5 : isWalk ? 6.2 : 1.0;
+  // Compact, weighty tactical gait: shorter stride, lower bounce and less arm flailing.
+  const cadence = isRun ? 8.0 : isWalk ? 5.7 : 1.0;
   const walkCycle = time * cadence;
-  const amp = isRun ? 0.72 : isWalk ? 0.42 : 0.03;
+  const amp = isRun ? 0.48 : isWalk ? 0.29 : 0.025;
   const breath = Math.sin(time * 1.6) * 0.012;
   if (state === 'roll') {
     const t = rollProgress, s = Math.sin(t * Math.PI);
@@ -464,15 +481,15 @@ function animateOperator(mesh, dt, time, opts) {
     torso.rotation.x = damp(torso.rotation.x, (isWalk ? -0.1 - sprint * 0.07 : -0.05) - ud.fireKick * 0.35 + breath, 10, dt);
     torso.rotation.z = damp(torso.rotation.z, isWalk ? -Math.sin(walkCycle) * (isRun ? 0.06 : 0.035) : 0, 9, dt);
     const gaitYaw = isWalk ? Math.sin(walkCycle) * 0.04 : 0;
-    const turnCounter = THREE.MathUtils.clamp(-ud.turnRate * 0.055, -0.22, 0.22);
+    const turnCounter = THREE.MathUtils.clamp(-ud.turnRate * 0.032, -0.12, 0.12);
     torso.rotation.y = damp(torso.rotation.y, gaitYaw + turnCounter, 8, dt);
     // Small foot/hip response helps the body read as turning instead of rotating like a rigid stick.
-    legs[0].hip.rotation.z = damp(legs[0].hip.rotation.z, THREE.MathUtils.clamp(ud.turnRate * 0.025, -0.09, 0.09), 7, dt);
+    legs[0].hip.rotation.z = damp(legs[0].hip.rotation.z, THREE.MathUtils.clamp(ud.turnRate * 0.012, -0.045, 0.045), 7, dt);
     legs[1].hip.rotation.z = damp(legs[1].hip.rotation.z, THREE.MathUtils.clamp(ud.turnRate * 0.025, -0.09, 0.09), 7, dt);
   }
   const headPitch = (state === 'aim' || state === 'fire') ? -0.1 : 0.03 + breath * 0.5;
   head.rotation.x = damp(head.rotation.x, headPitch, 8, dt);
-  const headCounter = THREE.MathUtils.clamp(-ud.turnRate * 0.075, -0.28, 0.28);
+  const headCounter = THREE.MathUtils.clamp(-ud.turnRate * 0.035, -0.12, 0.12);
   head.rotation.y = damp(head.rotation.y, headCounter + Math.sin(time * 0.55) * 0.025, 6, dt);
   if (rifle) {
     let rx = -0.20, ry = 0.06, rz = 0.03, px = 0.13, py = 0.28, pz = 0.24;
@@ -563,12 +580,65 @@ function animateZombie(mesh, dt, time, opts) {
   }
 }
 
+let previewRenderer = null, previewScene = null, previewCamera = null, previewOperator = null;
+function setupOperatorPreview() {
+  const previewCanvas = $('operatorPreviewCanvas');
+  if (!previewCanvas || !document.body.classList.contains('operator-test-mode') || previewRenderer) return;
+  previewScene = new THREE.Scene();
+  previewScene.background = new THREE.Color(0x101820);
+  previewCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 30);
+  previewCamera.position.set(0, 1.45, 5.8);
+  previewCamera.lookAt(0, 1.02, 0);
+  previewRenderer = new THREE.WebGLRenderer({ canvas: previewCanvas, antialias: true, alpha: false, powerPreference: 'low-power' });
+  previewRenderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+  previewRenderer.setSize(Math.max(1, previewCanvas.clientWidth), Math.max(1, previewCanvas.clientHeight), false);
+  previewRenderer.shadowMap.enabled = false;
+  previewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  previewRenderer.toneMappingExposure = 1.1;
+  previewScene.add(new THREE.HemisphereLight(0xdce8ee, 0x242c29, 2.0));
+  const key = new THREE.DirectionalLight(0xfff0d8, 2.5); key.position.set(-3, 5, 4); previewScene.add(key);
+  const rim = new THREE.DirectionalLight(0x8ba6b0, 1.1); rim.position.set(3, 2, -3); previewScene.add(rim);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(1.4, 32), new THREE.MeshStandardMaterial({ color: 0x28322f, roughness: 0.95 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -0.03; previewScene.add(floor);
+  updateOperatorPreview();
+}
+function updateOperatorPreview() {
+  if (!previewScene || !previewRenderer) return;
+  if (previewOperator) {
+    previewScene.remove(previewOperator);
+    previewOperator.traverse(o => {
+      if (o.isMesh) {
+        o.geometry?.dispose();
+        if (Array.isArray(o.material)) o.material.forEach(m => m.dispose()); else o.material?.dispose();
+      }
+    });
+  }
+  previewOperator = makeOperator(OPS[selectedOp].color);
+  previewOperator.scale.setScalar(1.28);
+  previewOperator.position.y = 0;
+  previewScene.add(previewOperator);
+  const c = $('operatorPreviewCanvas');
+  previewRenderer.setSize(Math.max(1, c.clientWidth), Math.max(1, c.clientHeight), false);
+  previewCamera.aspect = Math.max(1, c.clientWidth) / Math.max(1, c.clientHeight);
+  previewCamera.updateProjectionMatrix();
+}
+function renderOperatorPreview(time) {
+  if (!previewRenderer || !previewScene || !$('menu') || $('menu').classList.contains('hidden')) return;
+  if (previewOperator) {
+    previewOperator.rotation.y = time * 0.00022;
+    const ud = previewOperator.userData;
+    if (ud.head) ud.head.rotation.y = Math.sin(time * 0.00035) * 0.035;
+    if (ud.torso) ud.torso.rotation.x = Math.sin(time * 0.0014) * 0.008;
+  }
+  previewRenderer.render(previewScene, previewCamera);
+}
 function setupMenu() {
+  setupOperatorPreview();
   const ops = $('ops'), info = $('menuOpInfo');
   if (ops) { ops.innerHTML = ''; OPS.forEach((op, i) => {
     const b = document.createElement('button'); b.className = 'op-card' + (i === selectedOp ? ' active' : '');
     b.textContent = op.name; b.style.borderColor = i === selectedOp ? '#a9d47a' : '';
-    b.onclick = () => { selectedOp = i; setupMenu(); }; ops.appendChild(b);
+    b.onclick = () => { selectedOp = i; setupMenu(); updateOperatorPreview(); }; ops.appendChild(b);
   }); }
   if (info) info.textContent = OPS[selectedOp].name + ' · ' + OPS[selectedOp].desc;
   const skins = $('skinPick');
@@ -693,8 +763,15 @@ function shoot() {
   const muzzlePos = ud.muzzle ? ud.muzzle.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(player.x + (dx / len) * 0.55, 1.25, player.z + (dz / len) * 0.55);
   const flash = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffc14d, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false }));
   flash.scale.set(0.38, 0.38, 1); flash.position.copy(muzzlePos); scene.add(flash);
-  const tracer = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xffe0a0, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }));
-  tracer.scale.set(0.55, 0.05, 1); tracer.position.copy(muzzlePos); scene.add(tracer);
+  // World-space tracer aligned with bullet travel, not a camera-facing sprite.
+  const tracer = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.012, 0.012, 0.72, 5),
+    new THREE.MeshBasicMaterial({ color: 0xffe0a0, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  const dir3 = new THREE.Vector3(dx / len, 0, dz / len);
+  tracer.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir3);
+  tracer.position.copy(muzzlePos).addScaledVector(dir3, -0.25);
+  scene.add(tracer);
   bullets.push({ mesh: tracer, tracer, flash, x: muzzlePos.x, y: muzzlePos.y, z: muzzlePos.z, vx: (dx / len) * 32, vz: (dz / len) * 32, life: 0.55, age: 0, damage: 1 + Math.floor((weaponLevel - 1) * 0.7) });
 }
 
@@ -818,7 +895,13 @@ function frame(now) {
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i]; b.life -= dt; b.age = (b.age || 0) + dt;
       b.x += b.vx * dt; b.z += b.vz * dt;
-      if (b.tracer) { b.tracer.position.x = b.x; b.tracer.position.z = b.z; b.tracer.position.y = b.y || 1.2; }
+      if (b.tracer) {
+        const speed = Math.hypot(b.vx, b.vz) || 1;
+        const dir3 = new THREE.Vector3(b.vx / speed, 0, b.vz / speed);
+        b.tracer.position.set(b.x, b.y || 1.2, b.z).addScaledVector(dir3, -0.25);
+        b.tracer.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir3);
+        b.tracer.material.opacity = Math.max(0.2, 0.95 - b.age * 1.1);
+      }
       if (b.flash && b.age > 0.06) { scene.remove(b.flash); b.flash.material.dispose(); b.flash = null; }
       let hit = -1;
       for (let j = 0; j < zombies.length; j++) {
@@ -889,11 +972,18 @@ function frame(now) {
     camera.lookAt(player.x, 0.5, player.z + 1.5);
   }
   renderer.render(scene, camera);
+  renderOperatorPreview(now);
 }
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.7));
+  if (previewRenderer && $('operatorPreviewCanvas')) {
+    const c = $('operatorPreviewCanvas');
+    previewRenderer.setSize(Math.max(1, c.clientWidth), Math.max(1, c.clientHeight), false);
+    previewCamera.aspect = Math.max(1, c.clientWidth) / Math.max(1, c.clientHeight);
+    previewCamera.updateProjectionMatrix();
+  }
 });
 
 $('boot')?.classList.add('hidden');
