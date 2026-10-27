@@ -239,8 +239,14 @@ function makeOperator(color) {
       const headset = makeDetail(0.035, 0.052, 0.045, 0x171e1b, 0.6, 0.08);
       headset.position.set(side * 0.145, -0.005, 0.005); head.add(headset);
     }
-    const maskSeam = makeLimb(0.09, 0.012, 0.012, 0x414a41, 0.92, 0.01, false);
-    maskSeam.position.set(0, -0.064, 0.151); head.add(maskSeam);
+    const skullMark = makeDetail(0.088, 0.078, 0.018, 0xc9c8b7, 0.88, 0.01);
+    skullMark.position.set(0, -0.060, 0.132); head.add(skullMark);
+    const noseMark = makeLimb(0.025, 0.026, 0.010, 0x171c19, 0.9, 0.01, false);
+    noseMark.position.set(0, -0.050, 0.151); head.add(noseMark);
+    for (let tooth = 0; tooth < 4; tooth++) {
+      const toothLine = makeLimb(0.008, 0.027, 0.008, 0x202520, 0.9, 0.01, false);
+      toothLine.position.set(-0.027 + tooth * 0.018, -0.092, 0.151); head.add(toothLine);
+    }
   } else {
     const skull = new THREE.Mesh(new THREE.SphereGeometry(0.155, 12, 10), mat(skin, 0.9));
     skull.castShadow = true; head.add(skull); addEdge(skull, 0x111418, 1.04);
@@ -318,15 +324,15 @@ function makeOperator(color) {
     // Anatomical shoulder cap: compact deltoid under the carrier, no wide box-like "wing".
     // More readable shoulder anatomy: raised rounded cap, sloped deltoid and tapered sleeve.
     // BUILD 20: compact shoulder cap and tapered sleeve instead of a broad wing-like shape.
-    const shoulderPad = makeDetail(0.026, 0.030, 0.028, 0x303a35, 0.84, 0.015);
+    const shoulderPad = makeDetail(0.060, 0.055, 0.055, 0x303a35, 0.84, 0.015);
     shoulderPad.position.set(0, -0.006, 0.006); shoulder.add(shoulderPad);
-    const deltoid = makeDetail(0.028, 0.050, 0.030, vest, 0.84, 0.01);
+    const deltoid = makeDetail(0.070, 0.075, 0.060, vest, 0.84, 0.01);
     deltoid.position.set(0, -0.043, 0.006); shoulder.add(deltoid);
-    const upper = makeDetail(0.027, 0.088, 0.029, 0x303a35, 0.9, 0.01);
+    const upper = makeDetail(0.060, 0.125, 0.058, 0x303a35, 0.9, 0.01);
     upper.position.set(0, -0.116, 0.004); shoulder.add(upper);
     // Narrow sleeve/armour bands follow the arm instead of spanning the whole shoulder.
     // No shoulder straps or wide ID tabs: keep the silhouette close to the body.
-    const upperStrap = makeDetail(0.026, 0.012, 0.024, 0x222b28, 0.92, 0.01);
+    const upperStrap = makeDetail(0.061, 0.014, 0.058, 0x222b28, 0.92, 0.01);
     upperStrap.position.set(0, -0.105, 0.010); shoulder.add(upperStrap);
     const elbow = new THREE.Group(); elbow.position.y = -0.285; shoulder.add(elbow);
     const elbowPad = makeDetail(0.058, 0.052, 0.056, 0x252d2b, 0.88, 0.015);
@@ -679,7 +685,7 @@ function applyPreviewPose(model, index) {
   });
   ud.arms.forEach(arm => {
     // Stronger, visible shouldered-ready pose: upper arms forward, elbows tucked inward.
-    arm.shoulder.rotation.set(-0.22, arm.side * -0.02, -arm.side * 0.07);
+    arm.shoulder.rotation.set(-0.30, arm.side * -0.02, arm.side * 0.18);
     arm.elbow.rotation.set(-1.05, 0, arm.side * 0.04);
     arm.wrist.rotation.set(0.02, 0, 0);
   });
@@ -698,7 +704,7 @@ function applyPreviewPose(model, index) {
     ud.head.rotation.x = 0.18;
     ud.rifleGroup.position.set(0.07, 0.37, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.24, arm.side * -0.02, -arm.side * 0.08);
+      arm.shoulder.rotation.set(-0.34, arm.side * -0.02, arm.side * 0.20);
       arm.elbow.rotation.set(-1.08, 0, arm.side * 0.04);
       arm.wrist.rotation.set(0.02, 0, 0);
     });
@@ -716,7 +722,7 @@ function applyPreviewPose(model, index) {
     ud.rifleGroup.position.set(0.12, 0.23, 0.25);
     ud.rifleGroup.rotation.set(-0.26, 0.10, 0.02);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.16, arm.side * -0.02, -arm.side * 0.06);
+      arm.shoulder.rotation.set(-0.24, arm.side * -0.02, arm.side * 0.14);
       arm.elbow.rotation.set(-0.88, 0, arm.side * 0.03);
       arm.wrist.rotation.set(0.03, 0, 0);
     });
