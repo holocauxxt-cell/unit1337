@@ -357,14 +357,14 @@ function poseArmToTarget(arm, targetWorld, shoulderWorld) {
 
 function setTacticalArms(arms, state, fireKick, dt) {
   const L = arms[0], R = arms[1];
-  let lSx = -0.72, lSy = 0.42, lSz = 0.55, lEx = -1.05;
-  let rSx = -0.95, rSy = -0.12, rSz = -0.35, rEx = -1.15;
+  let lSx = -0.82, lSy = 0.20, lSz = -0.20, lEx = -1.00;
+  let rSx = -0.95, rSy = -0.08, rSz = 0.16, rEx = -1.12;
   if (state === 'reload') {
-    lSx = -1.05; lSy = 0.65; lSz = 0.4; lEx = -1.4;
-    rSx = -0.55; rSy = 0.1; rSz = -0.2; rEx = -0.9;
+    lSx = -1.00; lSy = 0.42; lSz = -0.16; lEx = -1.25;
+    rSx = -0.65; rSy = 0.04; rSz = 0.10; rEx = -0.95;
   } else if (state === 'roll' || state === 'vault') {
-    lSx = -1.0; lSy = 0.2; lSz = 0.3; lEx = -0.7;
-    rSx = -0.9; rSy = -0.1; rSz = -0.25; rEx = -0.65;
+    lSx = -0.95; lSy = 0.12; lSz = -0.12; lEx = -0.72;
+    rSx = -0.88; rSy = -0.06; rSz = 0.10; rEx = -0.68;
   } else if (state === 'fire') {
     rSx -= fireKick * 0.25;
     lSx -= fireKick * 0.12;
