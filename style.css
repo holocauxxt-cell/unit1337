@@ -248,3 +248,55 @@ body.operator-test-mode .operator-preview { display: block; }
 .preview-label { position: absolute; left: 10px; bottom: 8px; z-index: 1; padding: 4px 7px; border-radius: 5px; background: #0a0e12cc; color: #9aabb7; font-size: 9px; letter-spacing: .16em; pointer-events: none; }
 body.operator-test-mode .menu-card.menu-wide { max-height: calc(100dvh - 20px); overflow-y: auto; }
 @media (max-height: 760px) { .operator-preview { height: 220px; } body.operator-test-mode .menu-card.menu-wide { padding: 14px; } }
+
+
+/* Hotfix: keep the complete operator-selection menu reachable on short mobile screens. */
+body.operator-test-mode #menu {
+  align-items: flex-start;
+  justify-content: center;
+  padding: max(10px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+body.operator-test-mode #menu .menu-card.menu-wide {
+  width: min(520px, 100%);
+  max-height: none;
+  min-height: 0;
+  margin: auto 0;
+  overflow: visible;
+}
+body.operator-test-mode .operator-preview {
+  height: 180px;
+  flex: 0 0 180px;
+  pointer-events: none;
+}
+body.operator-test-mode .operator-preview canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+body.operator-test-mode #ops,
+body.operator-test-mode #skinPick,
+body.operator-test-mode #btnStart,
+body.operator-test-mode .menu-op-info,
+body.operator-test-mode .footer-hint {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+body.operator-test-mode #ops button,
+body.operator-test-mode #skinPick button,
+body.operator-test-mode #btnStart {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+@media (max-height: 740px) {
+  body.operator-test-mode .operator-preview { height: 145px; flex-basis: 145px; }
+  body.operator-test-mode #menu .menu-card.menu-wide { padding: 14px 12px; }
+}
