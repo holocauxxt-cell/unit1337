@@ -354,6 +354,6 @@ body.operator-test-mode .preview-label { z-index: 4; pointer-events: none; }
 #build-version { border-color: rgba(132, 194, 159, .95); color: #b9e4c8; }
 
 /* BUILD 20 — logo replaces the plain text title */
-.menu-logo { display:block; width:min(100%, 520px); height:auto; max-height:190px; object-fit:contain; margin:2px auto 10px; border-radius:8px; }
-.boot-logo { display:block; width:min(86vw, 560px); height:auto; margin:0 auto 10px; }
+.menu-logo { display:block; width:min(54vw, 300px); height:auto; max-height:none; object-fit:contain; margin:0 auto 8px; border-radius:6px; }
+.boot-logo { display:block; width:min(76vw, 420px); height:auto; max-height:none; margin:0 auto 10px; }
 .boot-title { display:none; }
