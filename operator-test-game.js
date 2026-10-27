@@ -154,8 +154,9 @@ function makeOperator(color) {
   const hips = makeLimb(0.44, 0.20, 0.28, 0x2a3238); pelvis.add(hips);
 
   const torso = new THREE.Group(); torso.position.y = 0.10; pelvis.add(torso);
-  const chest = makeLimb(0.50, 0.54, 0.30, vest, 0.72); chest.position.y = 0.28; torso.add(chest);
-  const plate = makeLimb(0.42, 0.34, 0.07, 0x1a2220, 0.5, 0.15); plate.position.set(0, 0.26, 0.17); torso.add(plate);
+  // Rounded torso base: softer chest silhouette under the plate carrier, avoiding the square-box look.
+  const chest = makeDetail(0.25, 0.285, 0.155, vest, 0.78, 0.015); chest.position.y = 0.28; torso.add(chest);
+  const plate = makeDetail(0.205, 0.165, 0.043, 0x1a2220, 0.54, 0.15); plate.position.set(0, 0.26, 0.165); torso.add(plate);
   // Layered tactical kit: soft-edged shoulder armor, segmented magazine pouches and side utility gear.
   const plateInset = makeDetail(0.155, 0.115, 0.025, 0x303a38, 0.62, 0.12);
   plateInset.position.set(0, 0.29, 0.214); torso.add(plateInset);
@@ -261,15 +262,15 @@ function makeOperator(color) {
     const shoulder = new THREE.Group();
     shoulder.position.set(side * 0.30, 0.48, 0.02);
     torso.add(shoulder);
-    const shoulderPad = makeDetail(0.105, 0.105, 0.105, 0x303a35, 0.8, 0.02);
+    const shoulderPad = makeDetail(0.095, 0.09, 0.095, 0x303a35, 0.8, 0.02);
     shoulderPad.position.set(0, -0.025, 0.005); shoulder.add(shoulderPad);
-    const upper = makeLimb(0.135, 0.28, 0.14, vest); upper.position.y = -0.13; shoulder.add(upper);
+    const upper = makeDetail(0.068, 0.14, 0.071, vest, 0.82, 0.015); upper.position.y = -0.13; shoulder.add(upper);
     const upperStrap = makeLimb(0.145, 0.035, 0.145, 0x222b28, 0.9, 0.01, false);
     upperStrap.position.set(0, -0.08, 0); shoulder.add(upperStrap);
     const elbow = new THREE.Group(); elbow.position.y = -0.28; shoulder.add(elbow);
     const elbowPad = makeDetail(0.075, 0.065, 0.07, 0x252d2b, 0.8, 0.02);
     elbowPad.position.set(0, -0.015, 0.025); elbow.add(elbowPad);
-    const forearm = makeLimb(0.12, 0.26, 0.12, vest); forearm.position.y = -0.12; elbow.add(forearm);
+    const forearm = makeDetail(0.061, 0.13, 0.061, vest, 0.84, 0.015); forearm.position.y = -0.12; elbow.add(forearm);
     const wrist = new THREE.Group(); wrist.position.y = -0.26; elbow.add(wrist);
     const glove = makeDetail(0.062, 0.07, 0.065, 0x171d1b, 0.95, 0.01);
     glove.position.set(0, -0.015, 0.015); wrist.add(glove);
