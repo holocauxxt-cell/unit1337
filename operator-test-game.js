@@ -163,6 +163,17 @@ function makeOperator(color) {
   plateInset.position.set(0, 0.29, 0.214); torso.add(plateInset);
   const plateMark = makeLimb(0.12, 0.018, 0.012, 0x899184, 0.7, 0.1, false);
   plateMark.position.set(0, 0.37, 0.239); torso.add(plateMark);
+  // Small plate screws, stitched carrier seams and a subdued unit patch make the vest read as layered kit.
+  for (const side of [-1, 1]) {
+    const plateBolt = makeDetail(0.012, 0.012, 0.008, 0x9b9d8a, 0.38, 0.5);
+    plateBolt.position.set(side * 0.16, 0.31, 0.218); torso.add(plateBolt);
+    const seam = makeLimb(0.012, 0.11, 0.009, 0x586158, 0.92, 0.01, false);
+    seam.position.set(side * 0.185, 0.25, 0.19); torso.add(seam);
+  }
+  const unitPatch = makeDetail(0.075, 0.045, 0.012, 0x596453, 0.95, 0.01);
+  unitPatch.position.set(-0.16, 0.43, 0.17); unitPatch.rotation.z = -0.12; torso.add(unitPatch);
+  const patchStitch = makeLimb(0.052, 0.008, 0.008, 0x9a9d87, 0.9, 0.01, false);
+  patchStitch.position.set(-0.16, 0.43, 0.184); torso.add(patchStitch);
   for (let p = 0; p < 3; p++) {
     const pouch = makeDetail(0.055, 0.075, 0.045, p === 1 ? 0x303b37 : 0x26302d, 0.9, 0.01);
     pouch.position.set(-0.13 + p * 0.13, 0.08, 0.205); torso.add(pouch);
@@ -183,7 +194,14 @@ function makeOperator(color) {
     utility.position.set(side * 0.225, -0.01, 0.015); pelvis.add(utility);
     const utilityFlap = makeLimb(0.085, 0.025, 0.012, 0x50594a, 0.85, 0.02, false);
     utilityFlap.position.set(side * 0.225, 0.025, 0.064); pelvis.add(utilityFlap);
+    const utilityLatch = makeDetail(0.025, 0.018, 0.01, 0x777d69, 0.65, 0.12);
+    utilityLatch.position.set(side * 0.225, 0.025, 0.073); pelvis.add(utilityLatch);
   }
+  // A compact sidearm holster and thigh strap on the operator's right leg.
+  const holster = makeDetail(0.075, 0.16, 0.09, 0x202622, 0.88, 0.02);
+  holster.position.set(0.27, -0.22, 0.045); pelvis.add(holster);
+  const holsterRetention = makeLimb(0.085, 0.025, 0.012, 0x59604f, 0.8, 0.02, false);
+  holsterRetention.position.set(0.27, -0.17, 0.095); pelvis.add(holsterRetention);
   const radio = makeLimb(0.075, 0.14, 0.055, 0x202725, 0.72, 0.08);
   radio.position.set(-0.235, 0.27, -0.025); torso.add(radio);
   const radioAntenna = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.008, 0.09, 6), mat(0x141a18, 0.5, 0.2));
@@ -265,6 +283,8 @@ function makeOperator(color) {
     kneePad.position.set(0, -0.015, 0.085); knee.add(kneePad);
     const kneeRidge = makeLimb(0.09, 0.018, 0.012, 0x59604f, 0.82, 0.02, false);
     kneeRidge.position.set(0, 0.015, 0.125); knee.add(kneeRidge);
+    const kneeStrap = makeLimb(0.14, 0.025, 0.012, 0x151b19, 0.95, 0.01, false);
+    kneeStrap.position.set(0, -0.075, 0.09); knee.add(kneeStrap);
     const shin = makeLimb(0.135, 0.32, 0.155, pants); shin.position.y = -0.16; knee.add(shin);
     // Articulated ankle/boot lets the foot roll naturally during a run cycle.
     const ankle = new THREE.Group(); ankle.position.y = -0.30; knee.add(ankle);
@@ -274,6 +294,10 @@ function makeOperator(color) {
     toeCap.position.set(0, -0.01, 0.135); ankle.add(toeCap);
     const sole = makeLimb(0.145, 0.025, 0.26, 0x101514, 0.95, 0.01, false);
     sole.position.set(0, -0.065, 0.06); ankle.add(sole);
+    for (let lace = 0; lace < 3; lace++) {
+      const laceBar = makeLimb(0.07, 0.009, 0.008, 0x687064, 0.9, 0.01, false);
+      laceBar.position.set(0, 0.018 - lace * 0.018, 0.17); ankle.add(laceBar);
+    }
     legs.push({ hip, knee, ankle, thigh, shin });
   }
 
@@ -287,6 +311,10 @@ function makeOperator(color) {
     const upper = makeDetail(0.068, 0.14, 0.071, vest, 0.82, 0.015); upper.position.y = -0.13; shoulder.add(upper);
     const upperStrap = makeLimb(0.145, 0.035, 0.145, 0x222b28, 0.9, 0.01, false);
     upperStrap.position.set(0, -0.08, 0); shoulder.add(upperStrap);
+    const shoulderID = makeDetail(0.07, 0.04, 0.012, opIndex === 1 ? 0x6e7950 : opIndex === 2 ? 0x626e76 : 0x6b7e68, 0.9, 0.01);
+    shoulderID.position.set(0, -0.07, 0.09); shoulder.add(shoulderID);
+    const shoulderStitch = makeLimb(0.045, 0.008, 0.008, 0x9a9d87, 0.9, 0.01, false);
+    shoulderStitch.position.set(0, -0.07, 0.103); shoulder.add(shoulderStitch);
     const elbow = new THREE.Group(); elbow.position.y = -0.28; shoulder.add(elbow);
     const elbowPad = makeDetail(0.075, 0.065, 0.07, 0x252d2b, 0.8, 0.02);
     elbowPad.position.set(0, -0.015, 0.025); elbow.add(elbowPad);
