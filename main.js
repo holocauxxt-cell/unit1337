@@ -4,8 +4,8 @@ try {
   // Proven complete hierarchical build (no truncation)
   const operatorTest = new URLSearchParams(location.search).get('operatorTest') === '1';
   document.body.classList.toggle('operator-test-mode', operatorTest);
-  const BUILD_LABEL = operatorTest ? 'BUILD 17 · OPERATOR PREVIEW' : 'BUILD 17 · MAIN GAME';
-  const gameFile = operatorTest ? './operator-test-game.js?v=17' : './game.js?v=operator-anatomy-v1';
+  const BUILD_LABEL = operatorTest ? 'BUILD 18 · OPERATOR PREVIEW' : 'BUILD 18 · MAIN GAME';
+  const gameFile = operatorTest ? './operator-test-game.js?v=18' : './game.js?v=operator-anatomy-v1';
   const r = await fetch(gameFile);
   if (!r.ok) throw new Error('game.js HTTP ' + r.status);
   let code = await r.text();
@@ -33,7 +33,7 @@ try {
     document.body.appendChild(buildTag);
   }
   buildTag.textContent = BUILD_LABEL;
-  buildTag.dataset.build = '17';
+  buildTag.dataset.build = '18';
 } catch (err) {
   console.error('UNIT1337 load failed', err);
   const boot = document.getElementById('boot');
