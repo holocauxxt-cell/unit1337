@@ -309,3 +309,9 @@ body.operator-test-mode .preview-label::after { content: " · СВАЙП ДЛЯ 
 @media (max-height: 740px) {
   body.operator-test-mode .operator-preview { height: 205px; flex-basis: 205px; }
 }
+
+
+/* Final interaction fix: earlier mobile-menu CSS accidentally disabled canvas pointer input. */
+body.operator-test-mode .operator-preview { pointer-events: auto !important; }
+body.operator-test-mode .operator-preview canvas { pointer-events: auto !important; touch-action: none !important; z-index: 2; }
+body.operator-test-mode .preview-label { z-index: 4; pointer-events: none; }
