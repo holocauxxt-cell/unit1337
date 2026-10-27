@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" role="img" aria-labelledby="t d">
+<title id="t">UNIT1337</title><desc id="d">Tactical survival logo with a skull inside a crosshair.</desc>
+<defs><linearGradient id="bg" x2="0" y2="1"><stop stop-color="#10191d"/><stop offset="1" stop-color="#080d10"/></linearGradient><linearGradient id="steel" x2="0" y2="1"><stop stop-color="#c2c2ad"/><stop offset=".5" stop-color="#777d70"/><stop offset="1" stop-color="#373f3b"/></linearGradient><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="2" seed="13"/><feColorMatrix values="0 0 0 0 .4 0 0 0 0 .4 0 0 0 0 .36 0 0 0 .15 0"/></filter></defs>
+<rect width="1000" height="560" rx="12" fill="url(#bg)"/>
+<g fill="none" stroke="#899084" stroke-width="3" opacity=".82"><path d="M400 206 A110 110 0 0 1 600 206"/><path d="M400 354 A110 110 0 0 0 600 354"/><path d="M300 280h95M605 280h95M500 120v74M500 366v74"/></g>
+<g transform="translate(500 182)" fill="url(#steel)" stroke="#111817" stroke-width="3"><path d="M-24 -3 Q-31 -31 -10 -40 Q0 -45 10 -40 Q31 -31 24 -3 L20 20 12 31 -12 31 -20 20Z"/><ellipse cx="-10" cy="-6" rx="7" ry="8" fill="#111817"/><ellipse cx="10" cy="-6" rx="7" ry="8" fill="#111817"/><path d="M-4 4L0 0 4 4 2 13 -2 13Z" fill="#111817"/><path d="M-13 17H13L10 27H-10Z" fill="#111817"/><path d="M-8 18v8M0 18v8M8 18v8" stroke="#9b9d8c" stroke-width="2"/></g>
+<path d="M500 106v-17M500 454v-18" stroke="#a95442" stroke-width="4"/>
+<g fill="url(#steel)" font-family="Arial,Helvetica,sans-serif" font-weight="900" text-anchor="middle" letter-spacing="8"><text x="500" y="314" font-size="91" stroke="#111817" stroke-width="2" paint-order="stroke">UNIT1337</text></g>
+<g stroke="#5b6258" stroke-width="2" opacity=".55"><path d="M120 280h170M710 280h170"/></g><rect width="1000" height="560" filter="url(#grain)" opacity=".16"/>
+</svg>
