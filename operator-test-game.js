@@ -661,59 +661,55 @@ function setupOperatorPreview() {
 }
 function applyPreviewPose(model, index) {
   const ud = model.userData;
-  // Preview poses are presentation-only; in-game animation and controls are untouched.
-  ud.pelvis.position.y = index === 0 ? 0.61 : index === 2 ? 0.73 : 0.82;
+  // Menu-only pose. Arms are brought forward and inward; no T-pose.
+  ud.pelvis.position.y = index === 0 ? 0.68 : index === 2 ? 0.78 : 0.82;
   ud.pelvis.rotation.set(0, 0, 0);
-  ud.torso.rotation.set(index === 0 ? -0.13 : index === 2 ? -0.08 : 0.025, 0, 0);
-  ud.head.rotation.set(index === 0 ? 0.10 : 0, 0, 0);
-  ud.legs.forEach((leg, i) => {
+  ud.torso.rotation.set(index === 0 ? -0.18 : index === 2 ? -0.08 : -0.03, 0, 0);
+  ud.head.rotation.set(index === 0 ? 0.14 : index === 1 ? 0.08 : 0.02, 0, 0);
+  ud.legs.forEach(leg => {
     leg.hip.rotation.set(0, 0, 0);
     leg.knee.rotation.set(0, 0, 0);
     leg.ankle.rotation.set(0, 0, 0);
   });
   ud.arms.forEach(arm => {
-    arm.shoulder.rotation.set(0, 0, 0);
-    arm.elbow.rotation.set(0, 0, 0);
-    arm.wrist.rotation.set(0, 0, 0);
+    arm.shoulder.rotation.set(-0.9, arm.side * -0.08, arm.side * -0.52);
+    arm.elbow.rotation.set(-0.9, 0, 0);
+    arm.wrist.rotation.set(0.08, 0, 0);
   });
-  ud.rifleGroup.rotation.set(-0.18, 0.08, 0.04);
+  ud.rifleGroup.position.set(0.08, 0.31, 0.28);
+  ud.rifleGroup.rotation.set(-0.12, 0.015, 0.01);
   if (index === 0) {
-    // GHOST: one-knee kneeling, rifle shouldered and looking down the optic.
-    ud.legs[0].hip.rotation.x = -0.88;
-    ud.legs[0].knee.rotation.x = 1.72;
-    ud.legs[0].ankle.rotation.x = -0.35;
-    ud.legs[1].hip.rotation.x = 0.50;
-    ud.legs[1].knee.rotation.x = 1.00;
-    ud.torso.rotation.x = -0.19;
-    ud.head.rotation.x = 0.16;
-    ud.rifleGroup.position.set(0.10, 0.40, 0.27);
-    ud.rifleGroup.rotation.set(-0.10, 0.02, 0.015);
+    // GHOST: controlled one-knee pose, shoulders forward, cheek close to the stock.
+    ud.legs[0].hip.rotation.x = -0.72;
+    ud.legs[0].knee.rotation.x = 1.48;
+    ud.legs[0].ankle.rotation.x = -0.28;
+    ud.legs[1].hip.rotation.x = 0.34;
+    ud.legs[1].knee.rotation.x = 0.82;
+    ud.legs[1].ankle.rotation.x = -0.10;
+    ud.pelvis.position.y = 0.65;
+    ud.torso.rotation.x = -0.23;
+    ud.head.rotation.x = 0.18;
+    ud.rifleGroup.position.set(0.07, 0.37, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.x = -1.05;
-      arm.shoulder.rotation.z = arm.side * -0.12;
-      arm.elbow.rotation.x = -0.62;
+      arm.shoulder.rotation.set(-1.05, arm.side * -0.04, arm.side * -0.48);
+      arm.elbow.rotation.set(-1.05, 0, arm.side * 0.04);
     });
   } else if (index === 1) {
-    // VIPER: upright aggressive aim, rifle held high and tight to the shoulder.
-    ud.rifleGroup.position.set(0.08, 0.36, 0.28);
-    ud.rifleGroup.rotation.set(-0.10, 0.015, 0.01);
+    // VIPER: standing shouldered aim, elbows tucked instead of straight out.
+    ud.rifleGroup.position.set(0.07, 0.34, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.x = -1.12;
-      arm.shoulder.rotation.z = arm.side * -0.09;
-      arm.elbow.rotation.x = -0.72;
+      arm.shoulder.rotation.set(-1.10, arm.side * -0.05, arm.side * -0.46);
+      arm.elbow.rotation.set(-1.0, 0, arm.side * 0.03);
     });
-    ud.head.rotation.x = 0.10;
   } else {
-    // RAVEN: low-ready stance, knees flexed and rifle held across the chest.
-    ud.legs.forEach(leg => { leg.hip.rotation.x = -0.16; leg.knee.rotation.x = 0.35; });
-    ud.rifleGroup.position.set(0.14, 0.27, 0.23);
-    ud.rifleGroup.rotation.set(-0.28, 0.16, 0.04);
+    // RAVEN: compact low-ready with bent knees and the muzzle slightly lowered.
+    ud.legs.forEach(leg => { leg.hip.rotation.x = -0.12; leg.knee.rotation.x = 0.28; });
+    ud.rifleGroup.position.set(0.12, 0.23, 0.25);
+    ud.rifleGroup.rotation.set(-0.26, 0.10, 0.02);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.x = -0.76;
-      arm.shoulder.rotation.z = arm.side * -0.16;
-      arm.elbow.rotation.x = -0.45;
+      arm.shoulder.rotation.set(-0.72, arm.side * -0.10, arm.side * -0.42);
+      arm.elbow.rotation.set(-0.82, 0, arm.side * 0.05);
     });
-    ud.head.rotation.x = 0.02;
   }
 }
 function updateOperatorPreview() {
