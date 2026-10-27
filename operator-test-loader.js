@@ -1,0 +1,31 @@
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
+
+try {
+  // Proven complete hierarchical build (no truncation)
+  const r = await fetch('./operator-test-game.js?v=4');
+  if (!r.ok) throw new Error('game.js HTTP ' + r.status);
+  let code = await r.text();
+  code = code.replace(/import\s*\*\s*as\s*THREE\s*from\s*['"][^'"]+['"];?\s*/m, '');
+  // Force higher fixed camera after load
+  code = code.replace(
+    /camera\.position\.set\([^)]+\);\s*camera\.lookAt\([^)]+\);/,
+    'camera.position.set(0, 19.5, 15.5); camera.lookAt(0, 0.4, 0);'
+  );
+  code = code.replace(
+    /camera\.position\.y \+= \(15\.5 - camera\.position\.y\) \* Math\.min\(1, dt \* 7\);/,
+    'camera.position.y = 19.5;'
+  );
+  code = code.replace(
+    /const camX = player\.x \+ 0\.5, camZ = player\.z \+ 12;/,
+    'const camX = player.x + 0.3, camZ = player.z + 14.5;'
+  );
+  const run = new Function('THREE', code);
+  run(THREE);
+} catch (err) {
+  console.error('UNIT1337 load failed', err);
+  const boot = document.getElementById('boot');
+  if (boot) {
+    const msg = (err && err.message) ? err.message : String(err);
+    boot.innerHTML = '<div class="boot-title">ERROR</div><div class="boot-sub">' + msg + '</div>';
+  }
+}
