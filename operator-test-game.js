@@ -631,7 +631,7 @@ function animateZombie(mesh, dt, time, opts) {
 }
 
 let previewRenderer = null, previewScene = null, previewCamera = null, previewOperator = null;
-let previewYaw = Math.PI, previewDrag = null, previewLastInput = performance.now();
+let previewYaw = 0, previewDrag = null, previewLastInput = performance.now();
 function setupOperatorPreview() {
   const previewCanvas = $('operatorPreviewCanvas');
   if (!previewCanvas || !document.body.classList.contains('operator-test-mode') || previewRenderer) return;
@@ -686,8 +686,8 @@ function applyPreviewPose(model, index) {
   });
   ud.arms.forEach(arm => {
     // Stronger, visible shouldered-ready pose: upper arms forward, elbows tucked inward.
-    arm.shoulder.rotation.set(-1.18, arm.side * -0.02, arm.side * -0.88);
-    arm.elbow.rotation.set(-0.78, 0, arm.side * 0.08);
+    arm.shoulder.rotation.set(-1.18, arm.side * -0.02, arm.side * -0.12);
+    arm.elbow.rotation.set(-0.78, 0, arm.side * 0.18);
     arm.wrist.rotation.set(0.14, 0, 0);
   });
   ud.rifleGroup.position.set(0.045, 0.34, 0.32);
@@ -705,16 +705,16 @@ function applyPreviewPose(model, index) {
     ud.head.rotation.x = 0.18;
     ud.rifleGroup.position.set(0.07, 0.37, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-1.12, arm.side * -0.015, arm.side * -0.78);
-      arm.elbow.rotation.set(-0.82, 0, arm.side * 0.07);
+      arm.shoulder.rotation.set(-1.12, arm.side * -0.015, arm.side * -0.12);
+      arm.elbow.rotation.set(-0.82, 0, arm.side * 0.16);
       arm.wrist.rotation.set(0.12, 0, 0);
     });
   } else if (index === 1) {
     // VIPER: standing shouldered aim, elbows tucked instead of straight out.
     ud.rifleGroup.position.set(0.07, 0.34, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-1.14, arm.side * -0.015, arm.side * -0.76);
-      arm.elbow.rotation.set(-0.78, 0, arm.side * 0.06);
+      arm.shoulder.rotation.set(-1.14, arm.side * -0.015, arm.side * -0.12);
+      arm.elbow.rotation.set(-0.78, 0, arm.side * 0.14);
       arm.wrist.rotation.set(0.12, 0, 0);
     });
   } else {
@@ -723,8 +723,8 @@ function applyPreviewPose(model, index) {
     ud.rifleGroup.position.set(0.12, 0.23, 0.25);
     ud.rifleGroup.rotation.set(-0.26, 0.10, 0.02);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.72, arm.side * -0.04, arm.side * -0.62);
-      arm.elbow.rotation.set(-0.68, 0, arm.side * 0.08);
+      arm.shoulder.rotation.set(-0.72, arm.side * -0.04, arm.side * -0.10);
+      arm.elbow.rotation.set(-0.68, 0, arm.side * 0.18);
       arm.wrist.rotation.set(0.10, 0, 0);
     });
   }
@@ -753,8 +753,7 @@ function updateOperatorPreview() {
 function renderOperatorPreview(time) {
   if (!previewRenderer || !previewScene || !$('menu') || $('menu').classList.contains('hidden')) return;
   if (previewOperator) {
-    // Slow automatic turn gives a 360-degree look; horizontal finger-drag takes control immediately.
-    if (!previewDrag && time - previewLastInput > 4500) previewYaw += 0.0007;
+    // Start facing the camera. Rotation is controlled by the user's swipe so the operator never turns away unexpectedly.
     previewOperator.rotation.y = previewYaw;
   }
   previewRenderer.render(previewScene, previewCamera);
