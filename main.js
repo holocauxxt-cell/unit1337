@@ -4,7 +4,7 @@ try {
   // Proven complete hierarchical build (no truncation)
   const operatorTest = new URLSearchParams(location.search).get('operatorTest') === '1';
   document.body.classList.toggle('operator-test-mode', operatorTest);
-  const gameFile = operatorTest ? './operator-test-game.js?v=7' : './game.js?v=operator-anatomy-v1';
+  const gameFile = operatorTest ? './operator-test-game.js?v=8' : './game.js?v=operator-anatomy-v1';
   const r = await fetch(gameFile);
   if (!r.ok) throw new Error('game.js HTTP ' + r.status);
   let code = await r.text();
