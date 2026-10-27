@@ -158,8 +158,8 @@ function makeOperator(color) {
   // Rounded torso base: softer chest silhouette under the plate carrier, avoiding the square-box look.
   const chest = makeDetail(0.235, 0.285, 0.145, vest, 0.78, 0.015); chest.position.y = 0.29; torso.add(chest);
   // Shoulder line and tapered abdomen break up the single-sphere silhouette.
-  const upperChest = makeDetail(0.205, 0.115, 0.118, vest, 0.82, 0.02);
-  upperChest.position.set(0, 0.395, 0.005); upperChest.scale.x = 1.0; torso.add(upperChest);
+  const upperChest = makeDetail(0.155, 0.085, 0.105, vest, 0.82, 0.02);
+  upperChest.position.set(0, 0.385, 0.005); torso.add(upperChest);
   const abdomen = makeDetail(0.178, 0.19, 0.12, 0x303a35, 0.9, 0.015);
   abdomen.position.set(0, 0.085, 0.018); torso.add(abdomen);
   for (let seg = 0; seg < 3; seg++) {
@@ -325,13 +325,9 @@ function makeOperator(color) {
     const upper = makeDetail(0.027, 0.088, 0.029, 0x303a35, 0.9, 0.01);
     upper.position.set(0, -0.116, 0.004); shoulder.add(upper);
     // Narrow sleeve/armour bands follow the arm instead of spanning the whole shoulder.
-    const upperStrap = makeDetail(0.045, 0.016, 0.046, 0x222b28, 0.92, 0.01);
-    upperStrap.position.set(side * -0.006, -0.105, 0.012);
-    upperStrap.rotation.z = side * -0.08; shoulder.add(upperStrap);
-    const shoulderID = makeDetail(0.047, 0.028, 0.009, opIndex === 1 ? 0x6e7950 : opIndex === 2 ? 0x626e76 : 0x6b7e68, 0.9, 0.01);
-    shoulderID.position.set(0, -0.065, 0.073); shoulder.add(shoulderID);
-    const shoulderStitch = makeDetail(0.028, 0.005, 0.004, 0x9a9d87, 0.9, 0.01);
-    shoulderStitch.position.set(0, -0.065, 0.081); shoulder.add(shoulderStitch);
+    // No shoulder straps or wide ID tabs: keep the silhouette close to the body.
+    const upperStrap = makeDetail(0.026, 0.012, 0.024, 0x222b28, 0.92, 0.01);
+    upperStrap.position.set(0, -0.105, 0.010); shoulder.add(upperStrap);
     const elbow = new THREE.Group(); elbow.position.y = -0.285; shoulder.add(elbow);
     const elbowPad = makeDetail(0.058, 0.052, 0.056, 0x252d2b, 0.88, 0.015);
     elbowPad.position.set(0, -0.018, 0.018); elbow.add(elbowPad);
@@ -683,7 +679,7 @@ function applyPreviewPose(model, index) {
   });
   ud.arms.forEach(arm => {
     // Stronger, visible shouldered-ready pose: upper arms forward, elbows tucked inward.
-    arm.shoulder.rotation.set(-0.48, arm.side * -0.02, -arm.side * 0.24);
+    arm.shoulder.rotation.set(-0.22, arm.side * -0.02, -arm.side * 0.07);
     arm.elbow.rotation.set(-1.05, 0, arm.side * 0.04);
     arm.wrist.rotation.set(0.02, 0, 0);
   });
@@ -702,7 +698,7 @@ function applyPreviewPose(model, index) {
     ud.head.rotation.x = 0.18;
     ud.rifleGroup.position.set(0.07, 0.37, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.52, arm.side * -0.02, -arm.side * 0.28);
+      arm.shoulder.rotation.set(-0.24, arm.side * -0.02, -arm.side * 0.08);
       arm.elbow.rotation.set(-1.08, 0, arm.side * 0.04);
       arm.wrist.rotation.set(0.02, 0, 0);
     });
@@ -710,7 +706,7 @@ function applyPreviewPose(model, index) {
     // VIPER: standing shouldered aim, elbows tucked instead of straight out.
     ud.rifleGroup.position.set(0.07, 0.34, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.44, arm.side * -0.02, -arm.side * 0.24);
+      arm.shoulder.rotation.set(-0.22, arm.side * -0.02, -arm.side * 0.07);
       arm.elbow.rotation.set(-1.02, 0, arm.side * 0.04);
       arm.wrist.rotation.set(0.02, 0, 0);
     });
@@ -720,7 +716,7 @@ function applyPreviewPose(model, index) {
     ud.rifleGroup.position.set(0.12, 0.23, 0.25);
     ud.rifleGroup.rotation.set(-0.26, 0.10, 0.02);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.30, arm.side * -0.02, -arm.side * 0.20);
+      arm.shoulder.rotation.set(-0.16, arm.side * -0.02, -arm.side * 0.06);
       arm.elbow.rotation.set(-0.88, 0, arm.side * 0.03);
       arm.wrist.rotation.set(0.03, 0, 0);
     });
