@@ -349,3 +349,6 @@ body.operator-test-mode .preview-label { z-index: 4; pointer-events: none; }
 
 /* BUILD 17 marker */
 #build-version { border-color: rgba(223, 140, 119, .95); color: #f4bcae; }
+
+/* BUILD 18 marker */
+#build-version { border-color: rgba(132, 194, 159, .95); color: #b9e4c8; }
