@@ -3,6 +3,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.m
 try {
   // Proven complete hierarchical build (no truncation)
   const operatorTest = new URLSearchParams(location.search).get('operatorTest') === '1';
+  document.body.classList.toggle('operator-test-mode', operatorTest);
   const gameFile = operatorTest ? './operator-test-game.js?v=6' : './game.js?v=operator-anatomy-v1';
   const r = await fetch(gameFile);
   if (!r.ok) throw new Error('game.js HTTP ' + r.status);
