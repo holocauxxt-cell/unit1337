@@ -255,10 +255,11 @@ function makeOperator(color) {
     const shoulder = new THREE.Group();
     shoulder.position.set(side * 0.30, 0.48, 0.02);
     torso.add(shoulder);
-    const shoulderPad = makeDetail(0.105, 0.105, 0.105, 0x303a35, 0.8, 0.02);
-    shoulderPad.position.set(0, -0.025, 0.005); shoulder.add(shoulderPad);
-    const upper = makeLimb(0.135, 0.28, 0.14, vest); upper.position.y = -0.13; shoulder.add(upper);
-    const upperStrap = makeLimb(0.145, 0.035, 0.145, 0x222b28, 0.9, 0.01, false);
+    // BUILD 20: compact shoulder armor and narrow sleeve; no oversized round shoulder cap.
+    const shoulderPad = makeDetail(0.035, 0.038, 0.035, 0x303a35, 0.8, 0.02);
+    shoulderPad.position.set(0, -0.015, 0.005); shoulder.add(shoulderPad);
+    const upper = makeLimb(0.075, 0.22, 0.078, vest); upper.position.y = -0.13; shoulder.add(upper);
+    const upperStrap = makeLimb(0.080, 0.020, 0.080, 0x222b28, 0.9, 0.01, false);
     upperStrap.position.set(0, -0.08, 0); shoulder.add(upperStrap);
     const elbow = new THREE.Group(); elbow.position.y = -0.28; shoulder.add(elbow);
     const elbowPad = makeDetail(0.075, 0.065, 0.07, 0x252d2b, 0.8, 0.02);
