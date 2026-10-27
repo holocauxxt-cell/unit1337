@@ -223,6 +223,12 @@ function makeOperator(color) {
     sideRail.position.set(0.145, 0.005, 0); head.add(sideRail);
     const headset = makeDetail(0.035, 0.055, 0.045, 0x171e1b, 0.55, 0.12);
     headset.position.set(-0.155, -0.005, 0.015); head.add(headset);
+    const nvgHinge = makeLimb(0.045, 0.035, 0.035, 0x62695a, 0.45, 0.35, false);
+    nvgHinge.position.set(0, 0.105, 0.15); head.add(nvgHinge);
+    const nvgArm = makeLimb(0.025, 0.10, 0.025, 0x252c28, 0.5, 0.3, false);
+    nvgArm.position.set(0, 0.065, 0.18); nvgArm.rotation.x = -0.32; head.add(nvgArm);
+    const nvgPod = makeDetail(0.035, 0.065, 0.045, 0x151b19, 0.42, 0.35);
+    nvgPod.position.set(0, 0.025, 0.22); head.add(nvgPod);
   }
 
   const legs = [];
@@ -293,8 +299,18 @@ function makeOperator(color) {
   barrel.rotation.x = Math.PI / 2; barrel.position.z = 0.52; barrel.castShadow = true; rifleGroup.add(barrel);
   const muzzleBrake = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.024, 0.05, 8), mat(0x0c0e10, 0.3, 0.65));
   muzzleBrake.rotation.x = Math.PI / 2; muzzleBrake.position.z = 0.70; rifleGroup.add(muzzleBrake);
+  const topRail = makeLimb(0.025, 0.018, 0.30, 0x343b36, 0.45, 0.55, false);
+  topRail.position.set(0, 0.047, 0.22); rifleGroup.add(topRail);
   const optic = makeLimb(0.04, 0.05, 0.12, 0x0e1210, 0.35);
   optic.position.set(0, 0.07, 0.08); rifleGroup.add(optic);
+  const opticLensFront = makeLimb(0.032, 0.032, 0.012, 0x344b4a, 0.22, 0.45, false);
+  opticLensFront.position.set(0, 0.075, 0.145); rifleGroup.add(opticLensFront);
+  const opticLensRear = makeLimb(0.028, 0.028, 0.012, 0x202f30, 0.25, 0.35, false);
+  opticLensRear.position.set(0, 0.075, 0.025); rifleGroup.add(opticLensRear);
+  for (let railSlot = 0; railSlot < 5; railSlot++) {
+    const slot = makeLimb(0.012, 0.012, 0.025, 0x50574d, 0.6, 0.4, false);
+    slot.position.set(0, 0.055, 0.13 + railSlot * 0.045); rifleGroup.add(slot);
+  }
 
   const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0, 0.74); rifleGroup.add(muzzle);
   const rightGrip = new THREE.Object3D(); rightGrip.position.set(0.02, -0.06, -0.01); rifleGroup.add(rightGrip);
@@ -388,6 +404,9 @@ function animateOperator(mesh, dt, time, opts) {
   let diff = faceAngle - fy;
   while (diff > Math.PI) diff -= Math.PI * 2;
   while (diff < -Math.PI) diff += Math.PI * 2;
+  // Track angular velocity for a short, controlled counter-rotation of shoulders and head.
+  const turnTarget = THREE.MathUtils.clamp(diff / Math.max(dt, 0.016), -4.0, 4.0);
+  ud.turnRate = damp(ud.turnRate || 0, turnTarget, 9, dt);
   mesh.rotation.y = fy + diff * Math.min(1, dt * 10);
   let state = 'idle';
   if (vaulting) state = 'vault'; else if (rolling) state = 'roll'; else if (reloading) state = 'reload';
@@ -437,11 +456,17 @@ function animateOperator(mesh, dt, time, opts) {
     pelvis.rotation.x = damp(pelvis.rotation.x, isWalk ? -0.04 - sprint * 0.03 : -0.02, 9, dt);
     torso.rotation.x = damp(torso.rotation.x, (isWalk ? -0.1 - sprint * 0.07 : -0.05) - ud.fireKick * 0.35 + breath, 10, dt);
     torso.rotation.z = damp(torso.rotation.z, isWalk ? -Math.sin(walkCycle) * (isRun ? 0.06 : 0.035) : 0, 9, dt);
-    torso.rotation.y = damp(torso.rotation.y, isWalk ? Math.sin(walkCycle) * 0.04 : 0, 8, dt);
+    const gaitYaw = isWalk ? Math.sin(walkCycle) * 0.04 : 0;
+    const turnCounter = THREE.MathUtils.clamp(-ud.turnRate * 0.055, -0.22, 0.22);
+    torso.rotation.y = damp(torso.rotation.y, gaitYaw + turnCounter, 8, dt);
+    // Small foot/hip response helps the body read as turning instead of rotating like a rigid stick.
+    legs[0].hip.rotation.z = damp(legs[0].hip.rotation.z, THREE.MathUtils.clamp(ud.turnRate * 0.025, -0.09, 0.09), 7, dt);
+    legs[1].hip.rotation.z = damp(legs[1].hip.rotation.z, THREE.MathUtils.clamp(ud.turnRate * 0.025, -0.09, 0.09), 7, dt);
   }
   const headPitch = (state === 'aim' || state === 'fire') ? -0.1 : 0.03 + breath * 0.5;
   head.rotation.x = damp(head.rotation.x, headPitch, 8, dt);
-  head.rotation.y = damp(head.rotation.y, Math.sin(time * 0.55) * 0.04, 6, dt);
+  const headCounter = THREE.MathUtils.clamp(-ud.turnRate * 0.075, -0.28, 0.28);
+  head.rotation.y = damp(head.rotation.y, headCounter + Math.sin(time * 0.55) * 0.025, 6, dt);
   if (rifle) {
     let rx = -0.20, ry = 0.06, rz = 0.03, px = 0.13, py = 0.28, pz = 0.24;
     if (state === 'reload') { rx = 0.22; ry = -0.18; rz = 0.10; px = 0.08; py = 0.24; pz = 0.14; }
