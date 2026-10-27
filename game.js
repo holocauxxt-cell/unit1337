@@ -167,8 +167,21 @@ function makeOperator(color) {
     const flap = makeLimb(0.075, 0.025, 0.012, 0x414b43, 0.9, 0.01, false);
     flap.position.set(-0.13 + p * 0.13, 0.105, 0.244); torso.add(flap);
   }
+  // Harness straps, belt hardware and utility pouches add depth without bright colors.
+  const leftStrap = makeLimb(0.055, 0.39, 0.025, 0x252d2a, 0.9, 0.02, false);
+  leftStrap.position.set(-0.145, 0.30, 0.205); leftStrap.rotation.z = -0.22; torso.add(leftStrap);
+  const rightStrap = makeLimb(0.055, 0.39, 0.025, 0x252d2a, 0.9, 0.02, false);
+  rightStrap.position.set(0.145, 0.30, 0.205); rightStrap.rotation.z = 0.22; torso.add(rightStrap);
+  const buckle = makeLimb(0.075, 0.05, 0.025, 0x9a9b84, 0.42, 0.45, false);
+  buckle.position.set(0, -0.01, 0.17); pelvis.add(buckle);
   const belt = makeLimb(0.47, 0.075, 0.31, 0x202824, 0.92, 0.02);
   belt.position.set(0, -0.01, 0); pelvis.add(belt);
+  for (const side of [-1, 1]) {
+    const utility = makeLimb(0.095, 0.105, 0.09, 0x252e2a, 0.9, 0.02);
+    utility.position.set(side * 0.225, -0.01, 0.015); pelvis.add(utility);
+    const utilityFlap = makeLimb(0.085, 0.025, 0.012, 0x50594a, 0.85, 0.02, false);
+    utilityFlap.position.set(side * 0.225, 0.025, 0.064); pelvis.add(utilityFlap);
+  }
   const radio = makeLimb(0.075, 0.14, 0.055, 0x202725, 0.72, 0.08);
   radio.position.set(-0.235, 0.27, -0.025); torso.add(radio);
   const radioAntenna = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.008, 0.09, 6), mat(0x141a18, 0.5, 0.2));
@@ -204,6 +217,12 @@ function makeOperator(color) {
     );
     helm.position.y = 0.02; head.add(helm);
     const visor = makeLimb(0.20, 0.05, 0.07, 0x111816, 0.3); visor.position.set(0, 0.02, 0.13); head.add(visor);
+    const mount = makeLimb(0.035, 0.06, 0.035, 0x39433c, 0.48, 0.3, false);
+    mount.position.set(0, 0.09, 0.12); head.add(mount);
+    const sideRail = makeLimb(0.025, 0.025, 0.12, 0x485149, 0.55, 0.25, false);
+    sideRail.position.set(0.145, 0.005, 0); head.add(sideRail);
+    const headset = makeDetail(0.035, 0.055, 0.045, 0x171e1b, 0.55, 0.12);
+    headset.position.set(-0.155, -0.005, 0.015); head.add(headset);
   }
 
   const legs = [];
@@ -220,11 +239,15 @@ function makeOperator(color) {
     const kneeRidge = makeLimb(0.09, 0.018, 0.012, 0x59604f, 0.82, 0.02, false);
     kneeRidge.position.set(0, 0.015, 0.125); knee.add(kneeRidge);
     const shin = makeLimb(0.135, 0.32, 0.155, pants); shin.position.y = -0.16; knee.add(shin);
+    // Articulated ankle/boot lets the foot roll naturally during a run cycle.
+    const ankle = new THREE.Group(); ankle.position.y = -0.30; knee.add(ankle);
     const boot = makeLimb(0.14, 0.09, 0.25, 0x202725, 0.78, 0.04);
-    boot.position.set(0, -0.32, 0.055); knee.add(boot);
+    boot.position.set(0, -0.02, 0.055); ankle.add(boot);
+    const toeCap = makeDetail(0.125, 0.052, 0.09, 0x303834, 0.72, 0.08);
+    toeCap.position.set(0, -0.01, 0.135); ankle.add(toeCap);
     const sole = makeLimb(0.145, 0.025, 0.26, 0x101514, 0.95, 0.01, false);
-    sole.position.set(0, -0.365, 0.06); knee.add(sole);
-    legs.push({ hip, knee, thigh, shin });
+    sole.position.set(0, -0.065, 0.06); ankle.add(sole);
+    legs.push({ hip, knee, ankle, thigh, shin });
   }
 
   const arms = [];
@@ -406,6 +429,8 @@ function animateOperator(mesh, dt, time, opts) {
     legs[1].hip.rotation.x = damp(legs[1].hip.rotation.x, rh - stance * 0.45, 11, dt);
     legs[0].knee.rotation.x = damp(legs[0].knee.rotation.x, Math.max(0.2, Math.sin(walkCycle + 0.55) * amp * 1.15) + stance, 12, dt);
     legs[1].knee.rotation.x = damp(legs[1].knee.rotation.x, Math.max(0.2, Math.sin(walkCycle + Math.PI + 0.55) * amp * 1.15) + stance, 12, dt);
+    if (legs[0].ankle) legs[0].ankle.rotation.x = damp(legs[0].ankle.rotation.x, isWalk ? Math.max(0, -Math.sin(walkCycle + 0.75)) * (isRun ? 0.32 : 0.18) : 0.02, 10, dt);
+    if (legs[1].ankle) legs[1].ankle.rotation.x = damp(legs[1].ankle.rotation.x, isWalk ? Math.max(0, -Math.sin(walkCycle + Math.PI + 0.75)) * (isRun ? 0.32 : 0.18) : 0.02, 10, dt);
     const bob = isWalk ? Math.abs(Math.sin(walkCycle)) * (isRun ? 0.055 : 0.032) : breath * 0.4;
     mesh.position.y = bob;
     pelvis.rotation.z = damp(pelvis.rotation.z, isWalk ? Math.sin(walkCycle) * (isRun ? 0.09 : 0.055) : 0, 9, dt);
@@ -433,6 +458,15 @@ function animateOperator(mesh, dt, time, opts) {
   }
   if (arms.length === 2) {
     setTacticalArms(arms, state, ud.fireKick, dt);
+    // Small, phase-locked shoulder/forearm movement makes the rifle stance feel carried, not frozen.
+    if (isWalk && state !== 'roll' && state !== 'vault' && state !== 'reload') {
+      const gait = Math.sin(walkCycle);
+      const gaitScale = isRun ? 0.075 : 0.035;
+      arms[0].shoulder.rotation.x += gait * gaitScale;
+      arms[1].shoulder.rotation.x -= gait * gaitScale * 0.65;
+      arms[0].elbow.rotation.x -= Math.max(0, gait) * gaitScale * 0.55;
+      arms[1].elbow.rotation.x -= Math.max(0, -gait) * gaitScale * 0.4;
+    }
     if (ud.fireKick > 0 && state !== 'roll' && state !== 'vault') {
       torso.rotation.x -= ud.fireKick * 0.1;
     }
