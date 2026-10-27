@@ -191,24 +191,28 @@ function makeOperator(color) {
 
   const head = new THREE.Group(); head.position.y = 0.70; torso.add(head);
   if (isGhost) {
-    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.155, 14, 12), mat(0xf0ebe3, 0.55, 0.05));
-    skull.castShadow = true; head.add(skull); addEdge(skull, 0x111418, 1.04);
-    const cowl = new THREE.Mesh(
-      new THREE.SphereGeometry(0.168, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.72),
-      mat(0x12161a, 0.85, 0.05)
+    // Ghost uses a covered tactical face, not a skull: compact helmet, balaclava and low-profile eye protection.
+    const balaclava = makeDetail(0.128, 0.145, 0.125, 0x202622, 0.96, 0.01);
+    balaclava.position.set(0, -0.025, 0.012); head.add(balaclava);
+    const jawWrap = makeDetail(0.105, 0.067, 0.105, 0x303832, 0.98, 0.01);
+    jawWrap.position.set(0, -0.09, 0.055); head.add(jawWrap);
+    const helmet = new THREE.Mesh(
+      new THREE.SphereGeometry(0.151, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.58),
+      mat(0x343d35, 0.78, 0.04)
     );
-    cowl.position.y = 0.01; cowl.rotation.x = 0.08; head.add(cowl);
-    const socketMat = mat(0x0a0c0e, 0.4, 0.1);
-    const ls = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), socketMat);
-    ls.position.set(-0.055, 0.02, 0.13); head.add(ls);
-    const rs = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), socketMat);
-    rs.position.set(0.055, 0.02, 0.13); head.add(rs);
-    const nose = makeLimb(0.03, 0.06, 0.04, 0x0a0c0e, 0.5, 0.05, false);
-    nose.position.set(0, -0.02, 0.145); head.add(nose);
-    const teeth = makeLimb(0.09, 0.03, 0.03, 0xe8e4dc, 0.4, 0.05, false);
-    teeth.position.set(0, -0.07, 0.135); head.add(teeth);
-    const ear = makeLimb(0.04, 0.08, 0.06, 0x1a2024, 0.5, 0.2, false);
-    ear.position.set(0.16, 0.0, 0.02); head.add(ear);
+    helmet.position.set(0, 0.035, -0.005); helmet.scale.set(1.02, 0.9, 1.0); helmet.castShadow = true; head.add(helmet);
+    const helmetRim = makeLimb(0.235, 0.025, 0.19, 0x1d241f, 0.82, 0.02, false);
+    helmetRim.position.set(0, 0.005, 0.025); head.add(helmetRim);
+    const goggles = makeLimb(0.205, 0.052, 0.045, 0x111816, 0.28, 0.28, false);
+    goggles.position.set(0, 0.015, 0.126); head.add(goggles);
+    for (const side of [-1, 1]) {
+      const lens = makeLimb(0.082, 0.032, 0.012, 0x293b38, 0.24, 0.4, false);
+      lens.position.set(side * 0.052, 0.016, 0.151); head.add(lens);
+      const headset = makeDetail(0.035, 0.052, 0.045, 0x171e1b, 0.6, 0.08);
+      headset.position.set(side * 0.145, -0.005, 0.005); head.add(headset);
+    }
+    const maskSeam = makeLimb(0.09, 0.012, 0.012, 0x414a41, 0.92, 0.01, false);
+    maskSeam.position.set(0, -0.064, 0.151); head.add(maskSeam);
   } else {
     const skull = new THREE.Mesh(new THREE.SphereGeometry(0.155, 12, 10), mat(skin, 0.9));
     skull.castShadow = true; head.add(skull); addEdge(skull, 0x111418, 1.04);
@@ -643,7 +647,7 @@ function startGame() {
   Object.assign(player, { x: 0, z: 0, hp: 100, maxHp: 100, dash: 0, dashCd: 0, invuln: 0, vaultT: 0, vaultY: 0, rollT: 0, rollX: 0, rollZ: 0, animState: 'idle', reloadT: 0, hitT: 0 });
   if (player.mesh) scene.remove(player.mesh);
   player.mesh = makeOperator(OPS[selectedOp].color);
-  player.mesh.position.set(0, 0, 0); player.mesh.visible = true; player.mesh.scale.set(1, 1, 1);
+  player.mesh.position.set(0, 0, 0); player.mesh.visible = true; player.mesh.scale.set(1.1, 1.12, 1.1);
   scene.add(player.mesh);
   camera.position.set(0.5, 15.5, 12); camera.lookAt(0, 0.5, 1.5);
   running = true; paused = false; dead = false; last = performance.now();
