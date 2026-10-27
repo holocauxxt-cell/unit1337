@@ -315,20 +315,27 @@ function makeOperator(color) {
     const shoulder = new THREE.Group();
     shoulder.position.set(side * 0.30, 0.48, 0.02);
     torso.add(shoulder);
-    const shoulderPad = makeDetail(0.095, 0.09, 0.095, 0x303a35, 0.8, 0.02);
-    shoulderPad.position.set(0, -0.025, 0.005); shoulder.add(shoulderPad);
-    const upper = makeDetail(0.068, 0.14, 0.071, vest, 0.82, 0.015); upper.position.y = -0.13; shoulder.add(upper);
-    const upperStrap = makeLimb(0.145, 0.035, 0.145, 0x222b28, 0.9, 0.01, false);
-    upperStrap.position.set(0, -0.08, 0); shoulder.add(upperStrap);
-    const shoulderID = makeDetail(0.07, 0.04, 0.012, opIndex === 1 ? 0x6e7950 : opIndex === 2 ? 0x626e76 : 0x6b7e68, 0.9, 0.01);
-    shoulderID.position.set(0, -0.07, 0.09); shoulder.add(shoulderID);
-    const shoulderStitch = makeLimb(0.045, 0.008, 0.008, 0x9a9d87, 0.9, 0.01, false);
-    shoulderStitch.position.set(0, -0.07, 0.103); shoulder.add(shoulderStitch);
-    const elbow = new THREE.Group(); elbow.position.y = -0.28; shoulder.add(elbow);
-    const elbowPad = makeDetail(0.075, 0.065, 0.07, 0x252d2b, 0.8, 0.02);
-    elbowPad.position.set(0, -0.015, 0.025); elbow.add(elbowPad);
-    const forearm = makeDetail(0.061, 0.13, 0.061, vest, 0.84, 0.015); forearm.position.y = -0.12; elbow.add(forearm);
-    const wrist = new THREE.Group(); wrist.position.y = -0.26; elbow.add(wrist);
+    // Anatomical shoulder cap: compact deltoid under the carrier, no wide box-like "wing".
+    const shoulderPad = makeDetail(0.082, 0.078, 0.079, 0x303a35, 0.84, 0.015);
+    shoulderPad.position.set(0, -0.035, 0.006); shoulder.add(shoulderPad);
+    const deltoid = makeDetail(0.071, 0.105, 0.068, vest, 0.84, 0.01);
+    deltoid.position.set(0, -0.105, 0.005); shoulder.add(deltoid);
+    const upper = makeDetail(0.061, 0.145, 0.060, 0x303a35, 0.9, 0.01);
+    upper.position.set(0, -0.17, 0); shoulder.add(upper);
+    // Narrow sleeve/armour bands follow the arm instead of spanning the whole shoulder.
+    const upperStrap = makeDetail(0.064, 0.022, 0.063, 0x222b28, 0.92, 0.01);
+    upperStrap.position.set(0, -0.105, 0.008); shoulder.add(upperStrap);
+    const shoulderID = makeDetail(0.047, 0.028, 0.009, opIndex === 1 ? 0x6e7950 : opIndex === 2 ? 0x626e76 : 0x6b7e68, 0.9, 0.01);
+    shoulderID.position.set(0, -0.065, 0.073); shoulder.add(shoulderID);
+    const shoulderStitch = makeDetail(0.028, 0.005, 0.004, 0x9a9d87, 0.9, 0.01);
+    shoulderStitch.position.set(0, -0.065, 0.081); shoulder.add(shoulderStitch);
+    const elbow = new THREE.Group(); elbow.position.y = -0.285; shoulder.add(elbow);
+    const elbowPad = makeDetail(0.058, 0.052, 0.056, 0x252d2b, 0.88, 0.015);
+    elbowPad.position.set(0, -0.018, 0.018); elbow.add(elbowPad);
+    const forearm = makeDetail(0.052, 0.135, 0.054, vest, 0.86, 0.01); forearm.position.y = -0.12; elbow.add(forearm);
+    const forearmGuard = makeDetail(0.052, 0.068, 0.055, 0x252d2b, 0.9, 0.015);
+    forearmGuard.position.set(0, -0.11, 0.022); elbow.add(forearmGuard);
+    const wrist = new THREE.Group(); wrist.position.y = -0.255; elbow.add(wrist);
     const glove = makeDetail(0.062, 0.07, 0.065, 0x171d1b, 0.95, 0.01);
     glove.position.set(0, -0.015, 0.015); wrist.add(glove);
     const hand = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), mat(0x252c28, 0.95));
@@ -672,11 +679,12 @@ function applyPreviewPose(model, index) {
     leg.ankle.rotation.set(0, 0, 0);
   });
   ud.arms.forEach(arm => {
-    arm.shoulder.rotation.set(-0.9, arm.side * -0.08, arm.side * -0.52);
-    arm.elbow.rotation.set(-0.9, 0, 0);
-    arm.wrist.rotation.set(0.08, 0, 0);
+    // Upper arms angle forward and inward; elbows fold back towards the receiver.
+    arm.shoulder.rotation.set(-1.05, arm.side * -0.035, arm.side * -0.30);
+    arm.elbow.rotation.set(-0.70, 0, arm.side * 0.025);
+    arm.wrist.rotation.set(0.04, 0, 0);
   });
-  ud.rifleGroup.position.set(0.08, 0.31, 0.28);
+  ud.rifleGroup.position.set(0.06, 0.32, 0.29);
   ud.rifleGroup.rotation.set(-0.12, 0.015, 0.01);
   if (index === 0) {
     // GHOST: controlled one-knee pose, shoulders forward, cheek close to the stock.
@@ -691,15 +699,17 @@ function applyPreviewPose(model, index) {
     ud.head.rotation.x = 0.18;
     ud.rifleGroup.position.set(0.07, 0.37, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-1.05, arm.side * -0.04, arm.side * -0.48);
-      arm.elbow.rotation.set(-1.05, 0, arm.side * 0.04);
+      arm.shoulder.rotation.set(-1.02, arm.side * -0.025, arm.side * -0.27);
+      arm.elbow.rotation.set(-0.78, 0, arm.side * 0.02);
+      arm.wrist.rotation.set(0.02, 0, 0);
     });
   } else if (index === 1) {
     // VIPER: standing shouldered aim, elbows tucked instead of straight out.
     ud.rifleGroup.position.set(0.07, 0.34, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-1.10, arm.side * -0.05, arm.side * -0.46);
-      arm.elbow.rotation.set(-1.0, 0, arm.side * 0.03);
+      arm.shoulder.rotation.set(-1.08, arm.side * -0.025, arm.side * -0.28);
+      arm.elbow.rotation.set(-0.76, 0, arm.side * 0.02);
+      arm.wrist.rotation.set(0.02, 0, 0);
     });
   } else {
     // RAVEN: compact low-ready with bent knees and the muzzle slightly lowered.
@@ -707,8 +717,9 @@ function applyPreviewPose(model, index) {
     ud.rifleGroup.position.set(0.12, 0.23, 0.25);
     ud.rifleGroup.rotation.set(-0.26, 0.10, 0.02);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.72, arm.side * -0.10, arm.side * -0.42);
-      arm.elbow.rotation.set(-0.82, 0, arm.side * 0.05);
+      arm.shoulder.rotation.set(-0.76, arm.side * -0.06, arm.side * -0.23);
+      arm.elbow.rotation.set(-0.62, 0, arm.side * 0.03);
+      arm.wrist.rotation.set(0.02, 0, 0);
     });
   }
 }
