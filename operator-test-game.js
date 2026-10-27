@@ -158,8 +158,8 @@ function makeOperator(color) {
   // Rounded torso base: softer chest silhouette under the plate carrier, avoiding the square-box look.
   const chest = makeDetail(0.235, 0.285, 0.145, vest, 0.78, 0.015); chest.position.y = 0.29; torso.add(chest);
   // Shoulder line and tapered abdomen break up the single-sphere silhouette.
-  const upperChest = makeDetail(0.255, 0.145, 0.132, vest, 0.82, 0.02);
-  upperChest.position.set(0, 0.405, 0.005); upperChest.scale.x = 1.06; torso.add(upperChest);
+  const upperChest = makeDetail(0.205, 0.115, 0.118, vest, 0.82, 0.02);
+  upperChest.position.set(0, 0.395, 0.005); upperChest.scale.x = 1.0; torso.add(upperChest);
   const abdomen = makeDetail(0.178, 0.19, 0.12, 0x303a35, 0.9, 0.015);
   abdomen.position.set(0, 0.085, 0.018); torso.add(abdomen);
   for (let seg = 0; seg < 3; seg++) {
@@ -317,15 +317,15 @@ function makeOperator(color) {
     torso.add(shoulder);
     // Anatomical shoulder cap: compact deltoid under the carrier, no wide box-like "wing".
     // More readable shoulder anatomy: raised rounded cap, sloped deltoid and tapered sleeve.
-    const shoulderPad = makeDetail(0.052, 0.060, 0.058, 0x303a35, 0.84, 0.015);
-    shoulderPad.position.set(0, -0.010, 0.010); shoulder.add(shoulderPad);
-    const deltoid = makeDetail(0.050, 0.086, 0.052, vest, 0.84, 0.01);
-    deltoid.position.set(side * -0.006, -0.072, 0.010);
-    deltoid.rotation.z = side * -0.12;
+    const shoulderPad = makeDetail(0.040, 0.046, 0.044, 0x303a35, 0.84, 0.015);
+    shoulderPad.position.set(0, -0.006, 0.008); shoulder.add(shoulderPad);
+    const deltoid = makeDetail(0.039, 0.066, 0.041, vest, 0.84, 0.01);
+    deltoid.position.set(0, -0.052, 0.008);
+    deltoid.rotation.z = side * -0.05;
     shoulder.add(deltoid);
-    const upper = makeDetail(0.043, 0.132, 0.045, 0x303a35, 0.9, 0.01);
-    upper.position.set(side * -0.010, -0.155, 0.005);
-    upper.rotation.z = side * -0.08;
+    const upper = makeDetail(0.035, 0.108, 0.037, 0x303a35, 0.9, 0.01);
+    upper.position.set(0, -0.132, 0.004);
+    upper.rotation.z = side * -0.04;
     shoulder.add(upper);
     // Narrow sleeve/armour bands follow the arm instead of spanning the whole shoulder.
     const upperStrap = makeDetail(0.045, 0.016, 0.046, 0x222b28, 0.92, 0.01);
@@ -686,8 +686,8 @@ function applyPreviewPose(model, index) {
   });
   ud.arms.forEach(arm => {
     // Stronger, visible shouldered-ready pose: upper arms forward, elbows tucked inward.
-    arm.shoulder.rotation.set(-0.72, arm.side * -0.015, 0);
-    arm.elbow.rotation.set(-1.28, 0, 0);
+    arm.shoulder.rotation.set(-0.48, arm.side * -0.02, arm.side * 0.24);
+    arm.elbow.rotation.set(-1.05, 0, arm.side * -0.08);
     arm.wrist.rotation.set(0.02, 0, 0);
   });
   ud.rifleGroup.position.set(0.045, 0.34, 0.32);
@@ -705,16 +705,16 @@ function applyPreviewPose(model, index) {
     ud.head.rotation.x = 0.18;
     ud.rifleGroup.position.set(0.07, 0.37, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.76, arm.side * -0.015, 0);
-      arm.elbow.rotation.set(-1.32, 0, 0);
+      arm.shoulder.rotation.set(-0.52, arm.side * -0.02, arm.side * 0.28);
+      arm.elbow.rotation.set(-1.08, 0, arm.side * -0.08);
       arm.wrist.rotation.set(0.02, 0, 0);
     });
   } else if (index === 1) {
     // VIPER: standing shouldered aim, elbows tucked instead of straight out.
     ud.rifleGroup.position.set(0.07, 0.34, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.68, arm.side * -0.015, 0);
-      arm.elbow.rotation.set(-1.24, 0, 0);
+      arm.shoulder.rotation.set(-0.44, arm.side * -0.02, arm.side * 0.24);
+      arm.elbow.rotation.set(-1.02, 0, arm.side * -0.08);
       arm.wrist.rotation.set(0.02, 0, 0);
     });
   } else {
@@ -723,8 +723,8 @@ function applyPreviewPose(model, index) {
     ud.rifleGroup.position.set(0.12, 0.23, 0.25);
     ud.rifleGroup.rotation.set(-0.26, 0.10, 0.02);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.48, arm.side * -0.02, 0);
-      arm.elbow.rotation.set(-1.02, 0, 0);
+      arm.shoulder.rotation.set(-0.30, arm.side * -0.02, arm.side * 0.20);
+      arm.elbow.rotation.set(-0.88, 0, arm.side * -0.06);
       arm.wrist.rotation.set(0.03, 0, 0);
     });
   }
