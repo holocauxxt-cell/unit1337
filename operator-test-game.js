@@ -156,13 +156,22 @@ function makeOperator(color) {
 
   const torso = new THREE.Group(); torso.position.y = 0.10; pelvis.add(torso);
   // Rounded torso base: softer chest silhouette under the plate carrier, avoiding the square-box look.
-  const chest = makeDetail(0.25, 0.285, 0.155, vest, 0.78, 0.015); chest.position.y = 0.28; torso.add(chest);
-  const plate = makeDetail(0.205, 0.165, 0.043, 0x1a2220, 0.54, 0.15); plate.position.set(0, 0.26, 0.165); torso.add(plate);
+  const chest = makeDetail(0.235, 0.285, 0.145, vest, 0.78, 0.015); chest.position.y = 0.29; torso.add(chest);
+  // Shoulder line and tapered abdomen break up the single-sphere silhouette.
+  const upperChest = makeDetail(0.255, 0.145, 0.132, vest, 0.82, 0.02);
+  upperChest.position.set(0, 0.405, 0.005); upperChest.scale.x = 1.06; torso.add(upperChest);
+  const abdomen = makeDetail(0.178, 0.19, 0.12, 0x303a35, 0.9, 0.015);
+  abdomen.position.set(0, 0.085, 0.018); torso.add(abdomen);
+  for (let seg = 0; seg < 3; seg++) {
+    const abdominalPanel = makeDetail(0.145 - seg * 0.012, 0.035, 0.018, seg === 1 ? 0x3a453e : 0x26302c, 0.88, 0.02);
+    abdominalPanel.position.set(0, 0.15 - seg * 0.055, 0.125); torso.add(abdominalPanel);
+  }
+  const plate = makeDetail(0.205, 0.165, 0.043, 0x1a2220, 0.54, 0.15); plate.position.set(0, 0.30, 0.165); torso.add(plate);
   // Layered tactical kit: soft-edged shoulder armor, segmented magazine pouches and side utility gear.
   const plateInset = makeDetail(0.155, 0.115, 0.025, 0x303a38, 0.62, 0.12);
-  plateInset.position.set(0, 0.29, 0.214); torso.add(plateInset);
+  plateInset.position.set(0, 0.33, 0.214); torso.add(plateInset);
   const plateMark = makeLimb(0.12, 0.018, 0.012, 0x899184, 0.7, 0.1, false);
-  plateMark.position.set(0, 0.37, 0.239); torso.add(plateMark);
+  plateMark.position.set(0, 0.41, 0.239); torso.add(plateMark);
   // Small plate screws, stitched carrier seams and a subdued unit patch make the vest read as layered kit.
   for (const side of [-1, 1]) {
     const plateBolt = makeDetail(0.012, 0.012, 0.008, 0x9b9d8a, 0.38, 0.5);
@@ -171,7 +180,7 @@ function makeOperator(color) {
     seam.position.set(side * 0.185, 0.25, 0.19); torso.add(seam);
   }
   const unitPatch = makeDetail(0.075, 0.045, 0.012, 0x596453, 0.95, 0.01);
-  unitPatch.position.set(-0.16, 0.43, 0.17); unitPatch.rotation.z = -0.12; torso.add(unitPatch);
+  unitPatch.position.set(-0.16, 0.45, 0.17); unitPatch.rotation.z = -0.12; torso.add(unitPatch);
   const patchStitch = makeLimb(0.052, 0.008, 0.008, 0x9a9d87, 0.9, 0.01, false);
   patchStitch.position.set(-0.16, 0.43, 0.184); torso.add(patchStitch);
   for (let p = 0; p < 3; p++) {
@@ -609,15 +618,15 @@ function animateZombie(mesh, dt, time, opts) {
 }
 
 let previewRenderer = null, previewScene = null, previewCamera = null, previewOperator = null;
-let previewYaw = 0, previewDrag = null, previewLastInput = 0;
+let previewYaw = Math.PI, previewDrag = null, previewLastInput = performance.now();
 function setupOperatorPreview() {
   const previewCanvas = $('operatorPreviewCanvas');
   if (!previewCanvas || !document.body.classList.contains('operator-test-mode') || previewRenderer) return;
   previewScene = new THREE.Scene();
   previewScene.background = new THREE.Color(0x101820);
   previewCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 30);
-  previewCamera.position.set(0, 1.45, 5.8);
-  previewCamera.lookAt(0, 1.02, 0);
+  previewCamera.position.set(0, 1.35, 5.2);
+  previewCamera.lookAt(0, 1.0, 0);
   previewRenderer = new THREE.WebGLRenderer({ canvas: previewCanvas, antialias: true, alpha: false, powerPreference: 'low-power' });
   previewRenderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   previewRenderer.setSize(Math.max(1, previewCanvas.clientWidth), Math.max(1, previewCanvas.clientHeight), false);
@@ -632,16 +641,18 @@ function setupOperatorPreview() {
   floor.rotation.x = -Math.PI / 2; floor.position.y = -0.03; floor.receiveShadow = true; previewScene.add(floor);
   key.castShadow = true;
   const canvas = previewCanvas;
-  canvas.style.touchAction = 'pan-y';
+  canvas.style.touchAction = 'none';
   canvas.addEventListener('pointerdown', (e) => {
-    previewDrag = { x: e.clientX, yaw: previewYaw, id: e.pointerId };
+    previewDrag = { x: e.clientX, y: e.clientY, yaw: previewYaw, id: e.pointerId };
     previewLastInput = performance.now();
     try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
   });
   canvas.addEventListener('pointermove', (e) => {
     if (!previewDrag || previewDrag.id !== e.pointerId) return;
-    previewYaw = previewDrag.yaw + (e.clientX - previewDrag.x) * 0.012;
+    previewYaw = previewDrag.yaw + (e.clientX - previewDrag.x) * 0.014;
     previewLastInput = performance.now();
+    e.preventDefault();
   });
   const endPreviewDrag = (e) => { if (previewDrag && previewDrag.id === e.pointerId) previewDrag = null; };
   canvas.addEventListener('pointerup', endPreviewDrag);
@@ -730,7 +741,7 @@ function renderOperatorPreview(time) {
   if (!previewRenderer || !previewScene || !$('menu') || $('menu').classList.contains('hidden')) return;
   if (previewOperator) {
     // Slow automatic turn gives a 360-degree look; horizontal finger-drag takes control immediately.
-    if (!previewDrag && time - previewLastInput > 1800) previewYaw += 0.0018;
+    if (!previewDrag && time - previewLastInput > 4500) previewYaw += 0.0007;
     previewOperator.rotation.y = previewYaw;
   }
   previewRenderer.render(previewScene, previewCamera);
