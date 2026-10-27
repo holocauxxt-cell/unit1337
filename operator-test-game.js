@@ -686,9 +686,9 @@ function applyPreviewPose(model, index) {
   });
   ud.arms.forEach(arm => {
     // Stronger, visible shouldered-ready pose: upper arms forward, elbows tucked inward.
-    arm.shoulder.rotation.set(-0.34, arm.side * -0.04, arm.side * -0.22);
-    arm.elbow.rotation.set(-1.12, 0, arm.side * 0.10);
-    arm.wrist.rotation.set(0.04, 0, 0);
+    arm.shoulder.rotation.set(-0.72, arm.side * -0.015, 0);
+    arm.elbow.rotation.set(-1.28, 0, 0);
+    arm.wrist.rotation.set(0.02, 0, 0);
   });
   ud.rifleGroup.position.set(0.045, 0.34, 0.32);
   ud.rifleGroup.rotation.set(-0.12, 0.015, 0.01);
@@ -705,17 +705,17 @@ function applyPreviewPose(model, index) {
     ud.head.rotation.x = 0.18;
     ud.rifleGroup.position.set(0.07, 0.37, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.30, arm.side * -0.025, arm.side * -0.22);
-      arm.elbow.rotation.set(-1.10, 0, arm.side * 0.10);
-      arm.wrist.rotation.set(0.04, 0, 0);
+      arm.shoulder.rotation.set(-0.76, arm.side * -0.015, 0);
+      arm.elbow.rotation.set(-1.32, 0, 0);
+      arm.wrist.rotation.set(0.02, 0, 0);
     });
   } else if (index === 1) {
     // VIPER: standing shouldered aim, elbows tucked instead of straight out.
     ud.rifleGroup.position.set(0.07, 0.34, 0.30);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.36, arm.side * -0.025, arm.side * -0.20);
-      arm.elbow.rotation.set(-1.08, 0, arm.side * 0.10);
-      arm.wrist.rotation.set(0.04, 0, 0);
+      arm.shoulder.rotation.set(-0.68, arm.side * -0.015, 0);
+      arm.elbow.rotation.set(-1.24, 0, 0);
+      arm.wrist.rotation.set(0.02, 0, 0);
     });
   } else {
     // RAVEN: compact low-ready with bent knees and the muzzle slightly lowered.
@@ -723,9 +723,9 @@ function applyPreviewPose(model, index) {
     ud.rifleGroup.position.set(0.12, 0.23, 0.25);
     ud.rifleGroup.rotation.set(-0.26, 0.10, 0.02);
     ud.arms.forEach(arm => {
-      arm.shoulder.rotation.set(-0.18, arm.side * -0.04, arm.side * -0.18);
-      arm.elbow.rotation.set(-0.82, 0, arm.side * 0.12);
-      arm.wrist.rotation.set(0.06, 0, 0);
+      arm.shoulder.rotation.set(-0.48, arm.side * -0.02, 0);
+      arm.elbow.rotation.set(-1.02, 0, 0);
+      arm.wrist.rotation.set(0.03, 0, 0);
     });
   }
 }
