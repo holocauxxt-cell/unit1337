@@ -343,3 +343,6 @@ body.operator-test-mode .preview-label { z-index: 4; pointer-events: none; }
 
 /* BUILD 15 marker */
 #build-version { border-color: rgba(213, 142, 104, .9); color: #f0c1a5; }
+
+/* BUILD 16 marker */
+#build-version { border-color: rgba(112, 174, 220, .9); color: #b8dcf5; }
