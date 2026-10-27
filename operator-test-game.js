@@ -581,6 +581,7 @@ function animateZombie(mesh, dt, time, opts) {
 }
 
 let previewRenderer = null, previewScene = null, previewCamera = null, previewOperator = null;
+let previewYaw = 0, previewDrag = null, previewLastInput = 0;
 function setupOperatorPreview() {
   const previewCanvas = $('operatorPreviewCanvas');
   if (!previewCanvas || !document.body.classList.contains('operator-test-mode') || previewRenderer) return;
@@ -592,15 +593,89 @@ function setupOperatorPreview() {
   previewRenderer = new THREE.WebGLRenderer({ canvas: previewCanvas, antialias: true, alpha: false, powerPreference: 'low-power' });
   previewRenderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   previewRenderer.setSize(Math.max(1, previewCanvas.clientWidth), Math.max(1, previewCanvas.clientHeight), false);
-  previewRenderer.shadowMap.enabled = false;
+  previewRenderer.shadowMap.enabled = true;
+  previewRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
   previewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
   previewRenderer.toneMappingExposure = 1.1;
   previewScene.add(new THREE.HemisphereLight(0xdce8ee, 0x242c29, 2.0));
   const key = new THREE.DirectionalLight(0xfff0d8, 2.5); key.position.set(-3, 5, 4); previewScene.add(key);
   const rim = new THREE.DirectionalLight(0x8ba6b0, 1.1); rim.position.set(3, 2, -3); previewScene.add(rim);
   const floor = new THREE.Mesh(new THREE.CircleGeometry(1.4, 32), new THREE.MeshStandardMaterial({ color: 0x28322f, roughness: 0.95 }));
-  floor.rotation.x = -Math.PI / 2; floor.position.y = -0.03; previewScene.add(floor);
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -0.03; floor.receiveShadow = true; previewScene.add(floor);
+  key.castShadow = true;
+  const canvas = previewCanvas;
+  canvas.style.touchAction = 'pan-y';
+  canvas.addEventListener('pointerdown', (e) => {
+    previewDrag = { x: e.clientX, yaw: previewYaw, id: e.pointerId };
+    previewLastInput = performance.now();
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!previewDrag || previewDrag.id !== e.pointerId) return;
+    previewYaw = previewDrag.yaw + (e.clientX - previewDrag.x) * 0.012;
+    previewLastInput = performance.now();
+  });
+  const endPreviewDrag = (e) => { if (previewDrag && previewDrag.id === e.pointerId) previewDrag = null; };
+  canvas.addEventListener('pointerup', endPreviewDrag);
+  canvas.addEventListener('pointercancel', endPreviewDrag);
   updateOperatorPreview();
+}
+function applyPreviewPose(model, index) {
+  const ud = model.userData;
+  // Preview poses are presentation-only; in-game animation and controls are untouched.
+  ud.pelvis.position.y = index === 0 ? 0.61 : index === 2 ? 0.73 : 0.82;
+  ud.pelvis.rotation.set(0, 0, 0);
+  ud.torso.rotation.set(index === 0 ? -0.13 : index === 2 ? -0.08 : 0.025, 0, 0);
+  ud.head.rotation.set(index === 0 ? 0.10 : 0, 0, 0);
+  ud.legs.forEach((leg, i) => {
+    leg.hip.rotation.set(0, 0, 0);
+    leg.knee.rotation.set(0, 0, 0);
+    leg.ankle.rotation.set(0, 0, 0);
+  });
+  ud.arms.forEach(arm => {
+    arm.shoulder.rotation.set(0, 0, 0);
+    arm.elbow.rotation.set(0, 0, 0);
+    arm.wrist.rotation.set(0, 0, 0);
+  });
+  ud.rifleGroup.rotation.set(-0.18, 0.08, 0.04);
+  if (index === 0) {
+    // GHOST: one-knee kneeling, rifle shouldered and looking down the optic.
+    ud.legs[0].hip.rotation.x = -0.88;
+    ud.legs[0].knee.rotation.x = 1.72;
+    ud.legs[0].ankle.rotation.x = -0.35;
+    ud.legs[1].hip.rotation.x = 0.50;
+    ud.legs[1].knee.rotation.x = 1.00;
+    ud.torso.rotation.x = -0.19;
+    ud.head.rotation.x = 0.16;
+    ud.rifleGroup.position.set(0.10, 0.40, 0.27);
+    ud.rifleGroup.rotation.set(-0.10, 0.02, 0.015);
+    ud.arms.forEach(arm => {
+      arm.shoulder.rotation.x = -1.05;
+      arm.shoulder.rotation.z = arm.side * -0.12;
+      arm.elbow.rotation.x = -0.62;
+    });
+  } else if (index === 1) {
+    // VIPER: upright aggressive aim, rifle held high and tight to the shoulder.
+    ud.rifleGroup.position.set(0.08, 0.36, 0.28);
+    ud.rifleGroup.rotation.set(-0.10, 0.015, 0.01);
+    ud.arms.forEach(arm => {
+      arm.shoulder.rotation.x = -1.12;
+      arm.shoulder.rotation.z = arm.side * -0.09;
+      arm.elbow.rotation.x = -0.72;
+    });
+    ud.head.rotation.x = 0.10;
+  } else {
+    // RAVEN: low-ready stance, knees flexed and rifle held across the chest.
+    ud.legs.forEach(leg => { leg.hip.rotation.x = -0.16; leg.knee.rotation.x = 0.35; });
+    ud.rifleGroup.position.set(0.14, 0.27, 0.23);
+    ud.rifleGroup.rotation.set(-0.28, 0.16, 0.04);
+    ud.arms.forEach(arm => {
+      arm.shoulder.rotation.x = -0.76;
+      arm.shoulder.rotation.z = arm.side * -0.16;
+      arm.elbow.rotation.x = -0.45;
+    });
+    ud.head.rotation.x = 0.02;
+  }
 }
 function updateOperatorPreview() {
   if (!previewScene || !previewRenderer) return;
@@ -614,8 +689,9 @@ function updateOperatorPreview() {
     });
   }
   previewOperator = makeOperator(OPS[selectedOp].color);
-  previewOperator.scale.setScalar(1.28);
+  previewOperator.scale.setScalar(1.20);
   previewOperator.position.y = 0;
+  applyPreviewPose(previewOperator, selectedOp);
   previewScene.add(previewOperator);
   const c = $('operatorPreviewCanvas');
   previewRenderer.setSize(Math.max(1, c.clientWidth), Math.max(1, c.clientHeight), false);
@@ -625,10 +701,9 @@ function updateOperatorPreview() {
 function renderOperatorPreview(time) {
   if (!previewRenderer || !previewScene || !$('menu') || $('menu').classList.contains('hidden')) return;
   if (previewOperator) {
-    previewOperator.rotation.y = time * 0.00022;
-    const ud = previewOperator.userData;
-    if (ud.head) ud.head.rotation.y = Math.sin(time * 0.00035) * 0.035;
-    if (ud.torso) ud.torso.rotation.x = Math.sin(time * 0.0014) * 0.008;
+    // Slow automatic turn gives a 360-degree look; horizontal finger-drag takes control immediately.
+    if (!previewDrag && time - previewLastInput > 1800) previewYaw += 0.0018;
+    previewOperator.rotation.y = previewYaw;
   }
   previewRenderer.render(previewScene, previewCamera);
 }
