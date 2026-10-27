@@ -2,7 +2,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.m
 
 try {
   // Proven complete hierarchical build (no truncation)
-  const r = await fetch('./game.js?v=operator-anatomy-v1');
+  const operatorTest = new URLSearchParams(location.search).get('operatorTest') === '1';
+  const gameFile = operatorTest ? './operator-test-game.js?v=5' : './game.js?v=operator-anatomy-v1';
+  const r = await fetch(gameFile);
   if (!r.ok) throw new Error('game.js HTTP ' + r.status);
   let code = await r.text();
   code = code.replace(/import\s*\*\s*as\s*THREE\s*from\s*['"][^'"]+['"];?\s*/m, '');
