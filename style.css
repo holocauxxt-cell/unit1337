@@ -300,3 +300,12 @@ body.operator-test-mode #btnStart {
   body.operator-test-mode .operator-preview { height: 145px; flex-basis: 145px; }
   body.operator-test-mode #menu .menu-card.menu-wide { padding: 14px 12px; }
 }
+
+
+/* Interactive character showcase */
+body.operator-test-mode .operator-preview { height: 260px; flex-basis: 260px; cursor: ew-resize; touch-action: pan-y; }
+body.operator-test-mode .operator-preview canvas { cursor: ew-resize; touch-action: pan-y; }
+body.operator-test-mode .preview-label::after { content: " · СВАЙП ДЛЯ ПОВОРОТА"; }
+@media (max-height: 740px) {
+  body.operator-test-mode .operator-preview { height: 205px; flex-basis: 205px; }
+}
